@@ -1,0 +1,148 @@
+# One workflow runs every scheduled job, commits the results and deploys the site.
+# Nothing here depends on anyone's computer being on.
+#
+# GitHub cron is in UTC. India Standard Time = UTC + 5:30 (no daylight saving).
+# GitHub may start a job late or skip one, so each job is a ladder of retries and
+# every run works out for itself what is still pending.
+name: pipeline
+
+on:
+  schedule:
+    # premarket: 06:00, 06:30, 07:00, 07:30, 08:00 IST, Monday to Friday
+    - cron: "30 0 * * 1-5"
+    - cron: "0 1 * * 1-5"
+    - cron: "30 1 * * 1-5"
+    - cron: "0 2 * * 1-5"
+    - cron: "30 2 * * 1-5"
+    # eod: 18:00, 18:30, 19:00, 20:00, 22:00 IST, Monday to Saturday
+    - cron: "30 12 * * 1-6"
+    - cron: "0 13 * * 1-6"
+    - cron: "30 13 * * 1-6"
+    - cron: "30 14 * * 1-6"
+    - cron: "30 16 * * 1-6"
+    # weekly: Sunday 10:00 IST (retrains the models, rebuilds the backtest)
+    - cron: "30 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        type: choice
+        default: eod
+        options: [premarket, eod, weekly]
+      force:
+        description: "premarket only: issue the plan even after 08:45 IST"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Never let two runs push at the same time; a queued run waits for the one before it.
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      IND_VAULT: ${{ github.workspace }}/vault
+      TZ: Asia/Kolkata
+    steps:
+      - name: Decide which job this run is
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            JOB="${{ inputs.job }}"
+          else
+            case "${{ github.event.schedule }}" in
+              "30 4 * * 0") JOB=weekly ;;
+              "30 0 * * 1-5"|"0 1 * * 1-5"|"30 1 * * 1-5"|"0 2 * * 1-5"|"30 2 * * 1-5") JOB=premarket ;;
+              *) JOB=eod ;;
+            esac
+          fi
+          echo "job=$JOB" >> "$GITHUB_OUTPUT"
+          echo "Running: $JOB"
+
+      - name: Check out the site repository
+        uses: actions/checkout@v4
+
+      - name: Check out the private vault (raw data)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/ind-stocks-vault
+          token: ${{ secrets.VAULT_TOKEN }}
+          path: vault
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the job
+        run: |
+          case "${{ steps.pick.outputs.job }}" in
+            premarket) python -m pipeline.run_premarket ${{ inputs.force && '--force' || '' }} ;;
+            weekly)    python -m pipeline.run_weekly ;;
+            *)         python -m pipeline.run_eod ;;
+          esac
+
+      - name: Save raw data to the vault
+        working-directory: vault
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "vault: nothing new"; else
+            git commit -q -m "vault: ${{ steps.pick.outputs.job }} $(date +%F)"
+            git push -q
+          fi
+
+      - name: Commit the published data and the ledger
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"; echo "site: nothing new"
+          else
+            git commit -q -m "data: ${{ steps.pick.outputs.job }} $(date '+%F %H:%M IST')"
+            git pull -q --rebase
+            git push -q
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A push made with the default token does not start another workflow, so
+      # the site is deployed here, in the same run.
+      - name: Assemble the site
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          mkdir -p _site
+          cp -r web/. _site/
+          rm -rf _site/tests _site/package.json      # test files are not part of the site
+          cp -r data _site/data
+          rm -rf _site/data/ledger/.gitkeep
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/deploy-pages@v4

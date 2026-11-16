@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark light">
+<title>Dalal Desk · one-session plans for Nifty 50</title>
+<meta name="description" content="Pre-committed one-session plans for Nifty 50 stocks, scored honestly against official NSE data. Educational, not investment advice.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e14'/%3E%3Cpath d='M9 22V12m0 3h0M16 25V7m0 4h0M23 20v-9' stroke='%23ff9f43' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Theme is applied before first paint to avoid a flash.
+  (function () {
+    try {
+      var t = localStorage.getItem("dd-theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a class="skip" href="#view">Skip to content</a>
+
+<div id="intro" class="intro" aria-hidden="true">
+  <div class="intro-glow"></div>
+  <div class="intro-inner">
+    <svg class="intro-candles" viewBox="0 0 320 120" aria-hidden="true"></svg>
+    <div class="intro-word"><span>Dalal</span> <span>Desk</span></div>
+    <div class="intro-sub">Nifty 50 · one session at a time</div>
+    <ol class="intro-steps">
+      <li><b>1</b>Plan before the open</li>
+      <li><b>2</b>No live prices</li>
+      <li><b>3</b>Scored after the close</li>
+    </ol>
+    <div class="intro-bar"><i></i></div>
+    <div class="intro-skip">Tap anywhere to skip</div>
+  </div>
+</div>
+<div class="progress" id="progress" aria-hidden="true"><i></i></div>
+
+<header class="top">
+  <div class="top-row">
+    <a class="brand" href="#/today" aria-label="Dalal Desk home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" class="bm-bg"/>
+        <path d="M9 22V12M16 25V7M23 20v-9" class="bm-bars"/>
+      </svg>
+      <span class="brand-name">Dalal<b>Desk</b></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/today" data-route="today">Today</a>
+      <a href="#/plan" data-route="plan">Make a plan</a>
+      <a href="#/track" data-route="track">Track record</a>
+      <a href="#/archive" data-route="archive">Archive</a>
+      <a href="#/how" data-route="how">How it works</a>
+    </nav>
+    <div class="top-right">
+      <div class="clock" title="All times on this site are India Standard Time (IST), wherever you are.">
+        <span class="clock-dot" id="clockDot"></span>
+        <span class="clock-time" id="clockTime">--:--:--</span>
+        <span class="clock-zone">IST</span>
+        <span class="clock-state" id="clockState"></span>
+      </div>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch colour theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="sun" d="M12 4V2m0 20v-2m8-8h2M2 12h2m13.7-5.7 1.4-1.4M4.9 19.1l1.4-1.4m0-11.4L4.9 4.9m14.2 14.2-1.4-1.4M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z"/><path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="strip" id="strip" aria-label="Indices at the last official close"></div>
+  <div class="tape" id="tape" aria-hidden="true"><div class="tape-track" id="tapeTrack"></div></div>
+  <div class="scrollp" aria-hidden="true"><i id="scrollP"></i></div>
+</header>
+
+<div class="banner" id="banner" role="status"></div>
+
+<main id="view" class="view" tabindex="-1">
+  <div class="sk-loader" role="status"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span>Loading market data…</span></div>
+</main>
+
+<footer class="foot">
+  <p><b>Not investment advice.</b> This site is an educational decision-support tool. It describes historical behaviour and pre-committed what-if levels; it does not recommend buying or selling any security. Markets carry risk of loss. The tool's own accuracy is measured and published, and may be no better than chance.</p>
+  <p class="foot-meta" id="footMeta"></p>
+</footer>
+
+<button class="help-fab" id="helpFab" type="button" aria-label="Help: how to use this site and what the words mean"><span aria-hidden="true">?</span><em>Help</em></button>
+<button class="to-top" id="toTop" type="button" aria-label="Back to the top" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+</button>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

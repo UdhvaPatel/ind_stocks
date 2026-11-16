@@ -1,0 +1,154 @@
+{
+ "schema": 1,
+ "model_version": "1.0.0",
+ "generated_at": "2026-11-16T03:59:19+05:30",
+ "last_eod_date": "2026-11-13",
+ "plan_for_date": "2026-11-16",
+ "plan_status": "scored",
+ "result_date": null,
+ "today_ist": "2026-11-16",
+ "today_is_session": true,
+ "upcoming_sessions": [
+  "2026-11-16",
+  "2026-11-17",
+  "2026-11-18"
+ ],
+ "pipeline_status": "ok",
+ "message": null,
+ "sources": {
+  "nse": {
+   "counts": {
+    "saved": 0,
+    "exists": 0,
+    "closed": 0,
+    "pending": 1,
+    "error": 0
+   },
+   "recovered": []
+  },
+  "yahoo": {
+   "ok": 60,
+   "failed": []
+  }
+ },
+ "session": {
+  "open": "09:15",
+  "close": "15:30",
+  "cancel_after": "14:30",
+  "exit_by": "15:15"
+ },
+ "costs": {
+  "profile": "discount-broker-intraday",
+  "verified": false,
+  "brokerage": {
+   "pct_per_order": 0.0003,
+   "max_per_order": 20.0
+  },
+  "stt_sell": 0.00025,
+  "exchange_txn": 2.97e-05,
+  "sebi_fee": 1e-06,
+  "stamp_duty_buy": 3e-05,
+  "gst": 0.18,
+  "slippage": {
+   "tiers": [
+    {
+     "min_turnover_cr": 500,
+     "per_side": 0.0005
+    },
+    {
+     "min_turnover_cr": 100,
+     "per_side": 0.001
+    },
+    {
+     "min_turnover_cr": 0,
+     "per_side": 0.0015
+    }
+   ],
+   "stop_exit_multiplier": 1.5
+  },
+  "reference": {
+   "capital": 100000,
+   "risk_pct": 1.0
+  }
+ },
+ "ticks": [
+  {
+   "below": 1000,
+   "tick": 0.05
+  },
+  {
+   "below": 5000,
+   "tick": 0.1
+  },
+  {
+   "below": 10000,
+   "tick": 0.5
+  },
+  {
+   "below": 20000,
+   "tick": 1.0
+  },
+  {
+   "below": 1000000000,
+   "tick": 5.0
+  }
+ ],
+ "variants_tried": {
+  "plan_types": 3,
+  "plan_parameter_sets": 14,
+  "conditions_screened": 16
+ },
+ "publish_prices": false,
+ "symbols": [
+  "ADANIENT",
+  "ADANIPORTS",
+  "APOLLOHOSP",
+  "ASIANPAINT",
+  "AXISBANK",
+  "BAJAJ-AUTO",
+  "BAJAJFINSV",
+  "BAJFINANCE",
+  "BEL",
+  "BHARTIARTL",
+  "BSE",
+  "CIPLA",
+  "COALINDIA",
+  "DRREDDY",
+  "EICHERMOT",
+  "ETERNAL",
+  "GRASIM",
+  "HCLTECH",
+  "HDFCBANK",
+  "HDFCLIFE",
+  "HINDALCO",
+  "HINDUNILVR",
+  "ICICIBANK",
+  "INDIGO",
+  "INFY",
+  "ITC",
+  "JIOFIN",
+  "JSWSTEEL",
+  "KOTAKBANK",
+  "LT",
+  "M&M",
+  "MARUTI",
+  "MAXHEALTH",
+  "NESTLEIND",
+  "NTPC",
+  "ONGC",
+  "POWERGRID",
+  "RELIANCE",
+  "SBILIFE",
+  "SBIN",
+  "SHRIRAMFIN",
+  "SUNPHARMA",
+  "TATACONSUM",
+  "TATASTEEL",
+  "TCS",
+  "TECHM",
+  "TITAN",
+  "TMPV",
+  "TRENT",
+  "ULTRACEMCO"
+ ]
+}

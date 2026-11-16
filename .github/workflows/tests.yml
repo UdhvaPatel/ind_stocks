@@ -1,0 +1,27 @@
+# Runs the test suite whenever code or configuration changes (not on data commits).
+name: tests
+
+on:
+  push:
+    paths: ["pipeline/**", "web/**", "config/**", "requirements.txt", ".github/workflows/tests.yml"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4          # the website's own tests (web/tests) run under Node
+        with:
+          node-version: "22"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest pipeline/tests -q

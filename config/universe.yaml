@@ -1,0 +1,34 @@
+# Universe for v1 (PLAN.md section 13, decision 4)
+# Stocks that get a daily plan come from these NSE constituent lists.
+plan_lists:
+  - nifty50
+
+# Lists whose symbols are archived in the vault (superset of plan_lists, so
+# Next 50 can be switched on later without a new backfill).
+tracked_lists:
+  - nifty50
+  - niftynext50
+
+# NSE constituent list file names under nsearchives .../content/indices/
+list_files:
+  nifty50: ind_nifty50list.csv
+  niftynext50: ind_niftynext50list.csv
+
+# Context indices: Yahoo symbol and the name used in NSE's ind_close_all file.
+indices:
+  NIFTY50:   {yahoo: "^NSEI",     nse: "Nifty 50",   label: "NIFTY 50"}
+  BANKNIFTY: {yahoo: "^NSEBANK",  nse: "Nifty Bank", label: "BANK NIFTY"}
+  SENSEX:    {yahoo: "^BSESN",    nse: null,         label: "SENSEX"}
+  INDIAVIX:  {yahoo: "^INDIAVIX", nse: "India VIX",  label: "INDIA VIX"}
+
+# Overnight context, all from Yahoo.
+overnight:
+  SP500:    {yahoo: "^GSPC",  label: "S&P 500"}
+  NASDAQ:   {yahoo: "^IXIC",  label: "Nasdaq"}
+  NIKKEI:   {yahoo: "^N225",  label: "Nikkei 225"}
+  HANGSENG: {yahoo: "^HSI",   label: "Hang Seng"}
+  BRENT:    {yahoo: "BZ=F",   label: "Brent crude"}
+  USDINR:   {yahoo: "INR=X",  label: "USD/INR"}
+
+history_years: 10        # Yahoo daily history range
+nse_backfill_years: 5    # official files kept for cross-validation

@@ -1,0 +1,17 @@
+# Backup NSE trading-holiday list (weekday holidays only).
+#
+# Past holidays are learned automatically from the official files (a weekday
+# with no file is a holiday), so this list only matters for FUTURE dates: the
+# 06:00 job uses it to decide whether to issue a plan today.
+#
+# If a date is missing here, nothing breaks: a plan is issued, no official
+# file ever arrives, and the plan is voided ("no session") instead of scored.
+#
+# VERIFY against the NSE holiday circular each December (see steps.md).
+holidays:
+  - {date: 2026-11-24, name: "Guru Nanak Jayanti", verified: false}
+  - {date: 2026-12-25, name: "Christmas", verified: false}
+
+# Special trading sessions on weekends (for example Muhurat trading or a
+# special Saturday session). Add dates here when NSE announces them.
+special_sessions: []

@@ -1,0 +1,34 @@
+# Intraday (same-day) cost model. PLAN.md 6.5, decision 10: realistic and conservative.
+# Every v1 plan buys and sells in the same session, so intraday rates apply.
+#
+# VERIFY these against a real contract note from your broker (steps.md, B2).
+# Rates are fractions of traded value unless stated otherwise.
+
+profile: discount-broker-intraday
+verified: false
+
+brokerage:
+  pct_per_order: 0.0003        # 0.03% of order value ...
+  max_per_order: 20.0          # ... capped at Rs 20, charged on each leg
+
+stt_sell: 0.00025              # Securities Transaction Tax, intraday: 0.025% on the sell side
+exchange_txn: 0.0000297        # NSE cash transaction charge, both sides
+sebi_fee: 0.000001             # Rs 10 per crore, both sides
+stamp_duty_buy: 0.00003        # 0.003% on the buy side (intraday)
+gst: 0.18                      # on brokerage + exchange charge + SEBI fee
+
+# Slippage per side by liquidity tier (average daily turnover over 20 sessions).
+# Applied to stop-buy entries, to market exits at the time stop, and (x multiplier)
+# to stop-loss exits. Limit orders (pullback entries, targets) get none.
+slippage:
+  tiers:
+    - {min_turnover_cr: 500, per_side: 0.0005}    # 0.05%
+    - {min_turnover_cr: 100, per_side: 0.0010}    # 0.10%
+    - {min_turnover_cr: 0,   per_side: 0.0015}    # 0.15%
+  stop_exit_multiplier: 1.5
+
+# Reference account used for published rupee figures; the UI rescales for the
+# capital and risk the user types in.
+reference:
+  capital: 100000
+  risk_pct: 1.0

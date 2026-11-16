@@ -1,0 +1,124 @@
+{
+ "schema": 1,
+ "model_version": "1.0.0",
+ "generated_at": "2026-11-16T03:59:19+05:30",
+ "as_of": "2026-11-13",
+ "trained": {
+  "week": "2026-11-16",
+  "rows": 109545,
+  "from": "2017-09-04",
+  "to": "2026-11-13",
+  "up_share": 0.5072
+ },
+ "next_training": "2026-11-23",
+ "blend_weights": {
+  "simple": 0.0,
+  "logistic": 0.49,
+  "trees": 0.481
+ },
+ "window_sessions": 250,
+ "sources": {
+  "simple": {
+   "n": 12500,
+   "hit": 0.5551,
+   "brier": 0.24778,
+   "skill_vs_coin": 0.0089
+  },
+  "logistic": {
+   "n": 12500,
+   "hit": 0.5547,
+   "brier": 0.24667,
+   "skill_vs_coin": 0.0133
+  },
+  "trees": {
+   "n": 12500,
+   "hit": 0.5309,
+   "brier": 0.24674,
+   "skill_vs_coin": 0.013
+  },
+  "blend": {
+   "n": 12500,
+   "hit": 0.549,
+   "brier": 0.24624,
+   "skill_vs_coin": 0.015
+  }
+ },
+ "top_weights": [
+  {
+   "feature": "x",
+   "label": "Overnight US move",
+   "weight": 0.1259
+  },
+  {
+   "feature": "roc21_u",
+   "label": "1-month move",
+   "weight": 0.1012
+  },
+  {
+   "feature": "x_beta",
+   "label": "Overnight US move x stock beta",
+   "weight": 0.0946
+  },
+  {
+   "feature": "rsi",
+   "label": "RSI",
+   "weight": -0.0938
+  },
+  {
+   "feature": "d20_u",
+   "label": "Distance from 20-day average",
+   "weight": -0.0684
+  },
+  {
+   "feature": "ret_u",
+   "label": "Previous day's move",
+   "weight": -0.0458
+  },
+  {
+   "feature": "clv",
+   "label": "Where the previous day closed inside its range",
+   "weight": -0.0314
+  },
+  {
+   "feature": "d50_u",
+   "label": "Distance from 50-day average",
+   "weight": -0.0299
+  },
+  {
+   "feature": "roc5_u",
+   "label": "5-day move",
+   "weight": 0.0281
+  },
+  {
+   "feature": "adv",
+   "label": "Market breadth (advancers)",
+   "weight": 0.0269
+  }
+ ],
+ "history": [
+  {
+   "week": "2026-11-16",
+   "rows": 109545,
+   "trained_to": "2026-11-13",
+   "weights": {
+    "simple": 0.0,
+    "logistic": 0.49,
+    "trees": 0.481
+   },
+   "window_sessions": 250,
+   "hit": {
+    "simple": 0.5551,
+    "logistic": 0.5547,
+    "trees": 0.5309,
+    "blend": 0.549
+   },
+   "skill": {
+    "simple": 0.0089,
+    "logistic": 0.0133,
+    "trees": 0.013,
+    "blend": 0.015
+   }
+  }
+ ],
+ "how": "Every week two models are retrained on all data whose outcome was known before that Monday. Their vote counts only as much as their last 250 sessions of real predictions have earned; a model that has not helped gets weight zero."
+}

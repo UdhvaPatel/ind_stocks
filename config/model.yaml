@@ -1,0 +1,72 @@
+# Model configuration. Changing anything that affects predictions or plans
+# REQUIRES bumping model_version: scores are never mixed across versions.
+model_version: "1.0.0"
+schema: 1
+
+# Honesty record (PLAN.md 7.6, multiple testing): what was looked at on history
+# before these rules were fixed. Result of that search (15 Nov 2026, 10 years x
+# 50 stocks): no one-session long rule showed a reliable edge after costs.
+#   breakout      : net -0.22 R per trade, negative on all 50 stocks
+#   pullback      : net -0.10 R per trade, negative on all 50 stocks
+#   gap_reversal  : net about +0.02 R per trade, positive in only 6 of 11 years
+# The rules are kept so the live ledger keeps testing them, and the call is
+# "no trade" unless a rule's own record on that stock is positive.
+variants_tried:
+  plan_types: 3
+  plan_parameter_sets: 14
+  conditions_screened: 16
+
+# Setup score (PLAN.md 6.1). Weights are judgement, NOT fitted.
+setup_weights:
+  trend: 0.30
+  level: 0.25
+  momentum: 0.20
+  participation: 0.15
+  risk: 0.10
+
+thresholds:
+  min_turnover_cr: 25    # liquidity gate: no plan below this 20-day average turnover
+  min_rule_trades: 40    # a rule needs this many past trades on the stock to be judged
+  shrink_trades: 200     # a stock's record is pulled toward the all-stock record by this many pseudo-trades
+  supported_t: 2.0       # t-statistic needed to call the evidence "supported"
+  strong_health: 65      # trend-health score bands (descriptive only, see setupscore.py)
+  weak_health: 40
+
+# Plan rules. Distances are in daily ATR(14) units.
+plans:
+  breakout:              # stop-buy above the previous session's high
+    trigger_atr: 0.10    # entry = previous high + 0.10 ATR
+    stop_atr: 1.00       # stop = entry - 1.00 ATR, or just under the previous low if closer
+    min_stop_atr: 0.50
+    t1_r: 1.0            # targets in multiples of risk (entry - stop)
+    t2_r: 2.0
+  pullback:              # limit-buy on a dip toward the classic pivot support (S1)
+    min_atr: 0.25        # entry kept between 0.25 and 1.00 ATR below the previous close
+    max_atr: 1.00
+    stop_atr: 0.80
+    t1_r: 1.0
+    t2_r: 2.0
+
+  gap_reversal:          # buy at the open after a large gap down, aiming for the gap to close
+    gap_atr: 0.75        # triggers only if the open is at least 0.75 ATR below the previous close
+    max_gap_atr: 3.00    # ... and not more than 3 ATR below it (that is news, not noise)
+    stop_atr: 1.50       # stop = fill price - 1.50 ATR
+    # single target: the previous close (the gap is filled)
+
+session:
+  cancel_after: "14:30"  # untriggered entries are cancelled
+  exit_by: "15:15"       # time exit; nothing is held overnight
+
+# NSE tick sizes by price (multiples chosen to be valid under both the old 0.05
+# rule and the newer price-based tick table).
+ticks:
+  - {below: 1000,  tick: 0.05}
+  - {below: 5000,  tick: 0.10}
+  - {below: 10000, tick: 0.50}
+  - {below: 20000, tick: 1.00}
+  - {below: 1000000000, tick: 5.00}
+
+monte_carlo:
+  resamples: 1000
+  trades_per_path: 20
+  seed: 20261115

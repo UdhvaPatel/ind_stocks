@@ -1,0 +1,131 @@
+{
+ "schema": 1,
+ "model_version": "1.0.0",
+ "generated_at": "2026-11-15T23:23:29+05:30",
+ "sessions_archived": 1240,
+ "first_session": "2021-11-15",
+ "last_session": "2026-11-13",
+ "cross_check": {
+  "symbols": 50,
+  "sessions_compared": 59167,
+  "agree_within_0_1_pct": 99.307,
+  "disagreements_over_0_5_pct": 53,
+  "missing_in_yahoo": 292,
+  "missing_in_nse": 0
+ },
+ "largest_disagreements": [
+  {
+   "symbol": "BSE",
+   "date": "2025-03-18",
+   "nse_close": 4146.7,
+   "yahoo_close_unadj": 3962.35,
+   "diff_pct": 4.446
+  },
+  {
+   "symbol": "JIOFIN",
+   "date": "2024-01-15",
+   "nse_close": 266.75,
+   "yahoo_close_unadj": 255.05,
+   "diff_pct": 4.386
+  },
+  {
+   "symbol": "M&M",
+   "date": "2025-09-08",
+   "nse_close": 3701.4,
+   "yahoo_close_unadj": 3561.3,
+   "diff_pct": 3.785
+  },
+  {
+   "symbol": "ICICIBANK",
+   "date": "2025-03-18",
+   "nse_close": 1309.85,
+   "yahoo_close_unadj": 1269.0,
+   "diff_pct": 3.119
+  },
+  {
+   "symbol": "M&M",
+   "date": "2025-03-18",
+   "nse_close": 2791.4,
+   "yahoo_close_unadj": 2705.15,
+   "diff_pct": 3.09
+  },
+  {
+   "symbol": "LT",
+   "date": "2025-03-18",
+   "nse_close": 3270.7,
+   "yahoo_close_unadj": 3173.45,
+   "diff_pct": 2.973
+  },
+  {
+   "symbol": "SHRIRAMFIN",
+   "date": "2025-03-18",
+   "nse_close": 642.3,
+   "yahoo_close_unadj": 623.25,
+   "diff_pct": 2.966
+  },
+  {
+   "symbol": "JIOFIN",
+   "date": "2025-03-18",
+   "nse_close": 225.18,
+   "yahoo_close_unadj": 219.52,
+   "diff_pct": 2.514
+  },
+  {
+   "symbol": "SUNPHARMA",
+   "date": "2025-03-18",
+   "nse_close": 1747.8,
+   "yahoo_close_unadj": 1704.3,
+   "diff_pct": 2.489
+  },
+  {
+   "symbol": "HINDALCO",
+   "date": "2025-03-18",
+   "nse_close": 697.85,
+   "yahoo_close_unadj": 680.75,
+   "diff_pct": 2.45
+  }
+ ],
+ "repairs": {
+  "flat_zero_volume_bar": 110,
+  "vendor_bad_print": 58,
+  "vendor_adjustment_artefact": 4,
+  "estimated_corporate_action": 1
+ },
+ "notable": {
+  "ADANIENT": [
+   {
+    "date": "2025-11-10",
+    "issue": "vendor_adjustment_artefact",
+    "action": "step ignored"
+   }
+  ],
+  "ETERNAL": [
+   {
+    "date": "2025-04-16",
+    "issue": "vendor_adjustment_artefact",
+    "action": "step ignored"
+   }
+  ],
+  "TATACONSUM": [
+   {
+    "date": "2024-07-18",
+    "issue": "vendor_adjustment_artefact",
+    "action": "step ignored"
+   }
+  ],
+  "TMPV": [
+   {
+    "date": "2025-10-14",
+    "issue": "estimated_corporate_action",
+    "action": "earlier prices scaled by 0.6054"
+   }
+  ],
+  "TRENT": [
+   {
+    "date": "2026-01-01",
+    "issue": "vendor_adjustment_artefact",
+    "action": "step ignored"
+   }
+  ]
+ }
+}

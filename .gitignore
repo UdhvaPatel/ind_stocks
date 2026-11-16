@@ -1,0 +1,7 @@
+# Raw vendor data lives in the private vault repo, never in this public repo
+vault/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env

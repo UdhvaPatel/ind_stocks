@@ -1,0 +1,13 @@
+# What the public site is allowed to carry (PLAN.md 12.3).
+#
+# publish_prices: false  -> charts are drawn in percent relative to the latest
+#                           close (no rupee price history is published)
+# publish_prices: true   -> charts carry rupee OHLC for the last `series_days`
+#
+# Note: the plan card always needs yesterday's close and the plan levels in
+# rupees, so `false` limits what is redistributed; it does not make prices secret.
+# Switch to true only after checking the NSE and Yahoo terms (steps.md, B3).
+publish_prices: false
+series_days: 120
+archive_backtest_days: 60     # how many recent backtest sessions get a day page
+backtest_years: 3
