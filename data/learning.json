@@ -1,73 +1,73 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-16T03:59:19+05:30",
- "as_of": "2026-11-13",
+ "generated_at": "2026-11-16T09:56:23+05:30",
+ "as_of": "2026-11-16",
  "trained": {
   "week": "2026-11-16",
-  "rows": 109545,
-  "from": "2017-09-04",
+  "rows": 109501,
+  "from": "2017-09-05",
   "to": "2026-11-13",
-  "up_share": 0.5072
+  "up_share": 0.5073
  },
  "next_training": "2026-11-23",
  "blend_weights": {
   "simple": 0.0,
-  "logistic": 0.49,
-  "trees": 0.481
+  "logistic": 0.4745,
+  "trees": 0.4793
  },
  "window_sessions": 250,
  "sources": {
   "simple": {
    "n": 12500,
-   "hit": 0.5551,
-   "brier": 0.24778,
-   "skill_vs_coin": 0.0089
+   "hit": 0.5542,
+   "brier": 0.24786,
+   "skill_vs_coin": 0.0086
   },
   "logistic": {
    "n": 12500,
-   "hit": 0.5547,
-   "brier": 0.24667,
-   "skill_vs_coin": 0.0133
+   "hit": 0.5532,
+   "brier": 0.24679,
+   "skill_vs_coin": 0.0128
   },
   "trees": {
    "n": 12500,
-   "hit": 0.5309,
-   "brier": 0.24674,
-   "skill_vs_coin": 0.013
+   "hit": 0.5313,
+   "brier": 0.24686,
+   "skill_vs_coin": 0.0126
   },
   "blend": {
    "n": 12500,
-   "hit": 0.549,
-   "brier": 0.24624,
-   "skill_vs_coin": 0.015
+   "hit": 0.5453,
+   "brier": 0.24635,
+   "skill_vs_coin": 0.0146
   }
  },
  "top_weights": [
   {
    "feature": "x",
    "label": "Overnight US move",
-   "weight": 0.1259
+   "weight": 0.1258
   },
   {
    "feature": "roc21_u",
    "label": "1-month move",
-   "weight": 0.1012
+   "weight": 0.1002
   },
   {
    "feature": "x_beta",
    "label": "Overnight US move x stock beta",
-   "weight": 0.0946
+   "weight": 0.0948
   },
   {
    "feature": "rsi",
    "label": "RSI",
-   "weight": -0.0938
+   "weight": -0.094
   },
   {
    "feature": "d20_u",
    "label": "Distance from 20-day average",
-   "weight": -0.0684
+   "weight": -0.0683
   },
   {
    "feature": "ret_u",
@@ -77,46 +77,46 @@
   {
    "feature": "clv",
    "label": "Where the previous day closed inside its range",
-   "weight": -0.0314
+   "weight": -0.0316
   },
   {
    "feature": "d50_u",
    "label": "Distance from 50-day average",
-   "weight": -0.0299
+   "weight": -0.0295
   },
   {
    "feature": "roc5_u",
    "label": "5-day move",
-   "weight": 0.0281
+   "weight": 0.0282
   },
   {
    "feature": "adv",
    "label": "Market breadth (advancers)",
-   "weight": 0.0269
+   "weight": 0.0267
   }
  ],
  "history": [
   {
    "week": "2026-11-16",
-   "rows": 109545,
+   "rows": 109501,
    "trained_to": "2026-11-13",
    "weights": {
     "simple": 0.0,
-    "logistic": 0.49,
-    "trees": 0.481
+    "logistic": 0.4745,
+    "trees": 0.4793
    },
    "window_sessions": 250,
    "hit": {
-    "simple": 0.5551,
-    "logistic": 0.5547,
-    "trees": 0.5309,
-    "blend": 0.549
+    "simple": 0.5542,
+    "logistic": 0.5532,
+    "trees": 0.5313,
+    "blend": 0.5453
    },
    "skill": {
-    "simple": 0.0089,
-    "logistic": 0.0133,
-    "trees": 0.013,
-    "blend": 0.015
+    "simple": 0.0086,
+    "logistic": 0.0128,
+    "trees": 0.0126,
+    "blend": 0.0146
    }
   }
  ],

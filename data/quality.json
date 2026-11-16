@@ -1,10 +1,10 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-15T23:23:29+05:30",
+ "generated_at": "2026-11-16T09:56:22+05:30",
  "sessions_archived": 1240,
  "first_session": "2021-11-15",
- "last_session": "2026-11-13",
+ "last_session": "2026-11-16",
  "cross_check": {
   "symbols": 50,
   "sessions_compared": 59167,
