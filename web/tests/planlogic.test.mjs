@@ -93,11 +93,20 @@ test("the chance of reaching a result is read off the rule's past results", () =
 });
 
 // ------------------------------------------------------------ feasibility
-test("a compatible request returns 4 to 8 plans, one per stock, each complete", () => {
+test("a compatible request returns a variety: up to 3 plans of each type, each complete", () => {
   const r = plan(100000, 500, 1);
   assert.equal(r.status, "feasible");
-  assert.ok(r.plans.length >= 4 && r.plans.length <= 8);
-  assert.equal(new Set(r.plans.map((p) => p.symbol)).size, r.plans.length, "distinct stocks");
+  assert.ok(r.plans.length >= 4 && r.plans.length <= 9);
+  const kinds = [...new Set(r.plans.map((p) => p.kind))];
+  assert.ok(kinds.length >= 2, "more than one plan type");
+  for (const k of kinds) {
+    const group = r.plans.filter((p) => p.kind === k);
+    assert.ok(group.length <= 3, `at most 3 ${k} plans`);
+    assert.equal(new Set(group.map((p) => p.symbol)).size, group.length, `distinct stocks within ${k}`);
+  }
+  // plans of one type are listed together
+  const order = r.plans.map((p) => p.kind).filter((k, i, a) => i === 0 || a[i - 1] !== k);
+  assert.equal(order.length, kinds.length, "each type appears as one block");
   assert.equal(r.forDate, "2026-11-16");
   for (const p of r.plans) {
     assert.ok(p.shares > 0 && p.bestGain >= 500, "every plan shown can reach the target in its best case");
@@ -122,7 +131,8 @@ test("plans the tool itself called are listed first", () => {
 });
 
 test("fewer than four plans are shown when the data supports fewer", () => {
-  const r = plan(100000, 500, 1, { ...PLANNER, stocks: PLANNER.stocks.slice(0, 2) });
+  const one = { ...PLANNER.stocks[0], rules: { breakout: PLANNER.stocks[0].rules.breakout } };
+  const r = plan(100000, 500, 1, { ...PLANNER, stocks: [one, { ...PLANNER.stocks[1], rules: { breakout: PLANNER.stocks[1].rules.breakout } }] });
   assert.equal(r.status, "feasible");
   assert.equal(r.plans.length, 2);
   assert.equal(r.summary.fewerThanMin, true);
@@ -170,7 +180,7 @@ test("missing or empty planning data is reported, not thrown", () => {
     assert.ok(r.reasons[0].length > 10);
   }
   const broken = { stocks: [{ symbol: "X", rules: { breakout: { entry: null } } }, { symbol: "Y" }, stock("ZZZ", 700)] };
-  assert.equal(makePlan(broken, COSTS, { amount: 100000, target: 500, risk: 1 }).plans.length, 1, "broken rows are skipped");
+  assert.equal(makePlan(broken, COSTS, { amount: 100000, target: 500, risk: 1 }).plans.length, 2, "broken rows are skipped (ZZZ's two rules remain)");
 });
 
 test("the wording never promises a return", () => {

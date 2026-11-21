@@ -183,6 +183,10 @@ python -m pipeline.run_weekly            (Sunday training and backtest; takes ab
 - **Home page.** The site now opens on a simple Home page: choose a stock, see the plan for the next market
   day, and see how past predictions did in rupees. The detailed pages are under **More** (Pro view, Track
   record, Archive, How it works).
+- **Desk portfolio.** The second tab shows the Desk's own pretend-money portfolio: up to ₹1,00,000 each trading day
+  behind the plans it calls, written before 9:15 AM and scored after the close. It starts Mon 23 Nov 2026 and needs
+  about 60 verified sessions (3 months) before the result means anything; until then it says "too early". The weekly
+  learning model runs beside it in shadow mode and can only take over after passing its tests and 60 live sessions.
 - **Paper trading.** On Home, press **I'd follow this plan**. **My journal** shows what would have happened after
   that market day closes. It is saved only in the browser you used, so a different phone or browser has its own journal.
 - **Strategy research.** How it works now shows the test of 30 trading rules (none beat simply holding the stocks

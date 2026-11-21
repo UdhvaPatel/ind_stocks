@@ -6,6 +6,7 @@ import { clear, countUp, dir, fmt, fmtDate, getJSON, h, icon, prefs, reduced, s,
 import { getLang, setLang, t } from "./i18n.js";
 import { AMOUNTS, lastSession, monogram, nextPlan, pastRows, record, RULE_TITLES } from "./homelogic.js";
 import * as journal from "./journallogic.js";
+import { portfolioHeadline } from "./portfolio.js";
 import { researchHeadline } from "./research.js";
 import { marketSeries } from "./comparelogic.js";
 
@@ -21,8 +22,9 @@ const TRACK = { live: ["Real prediction", "live", "Written by the scheduled job 
 
 export async function renderHome(root, ctx) {
   const { meta, market, params, go } = ctx;
-  const [universe, index, research] = await Promise.all([
-    getJSON("universe.json", { optional: true }), getJSON("compare/index.json", { optional: true }), getJSON("research.json", { optional: true })]);
+  const [universe, index, research, portfolio] = await Promise.all([
+    getJSON("universe.json", { optional: true }), getJSON("compare/index.json", { optional: true }), getJSON("research.json", { optional: true }),
+    getJSON("portfolio.json", { optional: true })]);
   const names = Object.fromEntries(((universe && universe.stocks) || []).map((x) => [x.symbol, x.name]));
   const stocks = market.heatmap.map((r) => ({ ...r, name: names[r.symbol] || r.symbol }));
   const symbols = stocks.map((x) => x.symbol);
@@ -36,6 +38,9 @@ export async function renderHome(root, ctx) {
   const page = h("div", { class: "hx" });
   root.append(page);
   page.append(hero(meta, index));
+  const banner = portfolioHeadline(portfolio);
+  if (banner) page.append(h("button", { class: "hx-pf-banner " + banner.tone, type: "button", onclick: () => go("portfolio") },
+    h("span", { class: "hx-pf-i", "aria-hidden": "true", text: "📊" }), h("span", { text: banner.text }), h("span", { class: "hx-arrow", text: "→" })));
 
   // ---- step 1: choose a stock
   const grid = h("div", { class: "hx-grid", "aria-label": "Nifty 50 stocks" });

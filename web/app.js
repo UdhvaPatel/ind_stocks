@@ -6,13 +6,14 @@ import { openHelp, pointerEffects, simpleNote, skeleton, welcomeCard } from "./j
 import { renderHow } from "./js/how.js";
 import { renderHome } from "./js/home.js";
 import { renderJournal } from "./js/journal.js";
+import { renderPortfolio } from "./js/portfolio.js";
 import { renderPlan } from "./js/plan.js";
 import { renderToday } from "./js/today.js";
 import { renderTrack } from "./js/track.js";
 
 const OPEN = 9 * 60 + 15, CLOSE = 15 * 60 + 30;
 const view = document.getElementById("view");
-const routes = { home: renderHome, journal: renderJournal, today: renderToday, plan: renderPlan, accuracy: renderAccuracy, track: renderTrack, archive: renderArchive, how: renderHow };
+const routes = { home: renderHome, portfolio: renderPortfolio, journal: renderJournal, today: renderToday, plan: renderPlan, accuracy: renderAccuracy, track: renderTrack, archive: renderArchive, how: renderHow };
 let ctx = null;
 
 // ------------------------------------------------------------------- intro

@@ -1188,6 +1188,20 @@ body[data-route="home"] .view { padding-top: 6px; }
 .jr-actions p { flex-basis: 100%; }
 @media (max-width: 860px) { .jr-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jr-row { grid-template-columns: 1fr auto; } .jr-out { grid-column: 1 / -1; } }
 
+/* Desk paper portfolio */
+.hx-pf-banner { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: left; padding: 14px 18px; border-radius: 18px; cursor: pointer;
+  background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box; border: 1px solid transparent; font-size: 14px; line-height: 1.5; color: var(--text);
+  animation: cardIn .6s cubic-bezier(.2,.8,.2,1) .2s both; transition: transform .3s cubic-bezier(.2,.8,.2,1.2), box-shadow .3s; }
+.hx-pf-banner:hover { transform: translateY(-3px); box-shadow: var(--glow); }
+.hx-pf-banner:hover .hx-arrow { transform: translateX(4px); }
+.hx-pf-i { font-size: 22px; }
+.pf-head { gap: 8px; }
+.pf-line { font-size: 16px; line-height: 1.5; max-width: 70ch; }
+.pf-big { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; animation: bigIn .7s cubic-bezier(.2,.8,.2,1.3) .2s both; }
+.pf-tbl td { vertical-align: top; } .pf-tbl tr.faded { opacity: .55; }
+.pf-pos { font-size: 12.5px; line-height: 1.6; }
+.pf-rules { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 6px; color: var(--text-2); line-height: 1.55; }
+
 /* Make a plan: grouped by plan type */
 .pgroups { display: grid; gap: 18px; }
 .pgroup { display: grid; gap: 10px; }

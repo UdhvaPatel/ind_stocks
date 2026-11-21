@@ -8,7 +8,7 @@ const ALL = "ALL";
 
 export async function renderAccuracy(root, ctx) {
   const { params, go } = ctx;
-  const data = await getJSON("compare.json", { optional: true });
+  const [data, study] = await Promise.all([getJSON("compare.json", { optional: true }), getJSON("range_study.json", { optional: true })]);
   clear(root);
   root.append(h("div", { class: "page-h" },
     h("div", {}, h("h1", { text: "Prediction vs real market" }),
@@ -58,7 +58,7 @@ export async function renderAccuracy(root, ctx) {
         h("label", { class: "acc-field" }, h("span", { class: "eyebrow", text: "1 · Pick a stock" }), select),
         h("div", { class: "acc-field" }, h("span", { class: "eyebrow", text: "2 · Pick a period" }), periodChips),
         h("div", { class: "acc-field" }, h("span", { class: "eyebrow", text: "3 · Show as" }), unitSeg)))),
-    body);
+    body, rangeStudyCard(study));
   update();
 }
 
@@ -206,6 +206,22 @@ function marketView(data, state, go, pick) {
       h("div", { class: "card-b grid2" }, rank("Most often inside", bySym.slice(0, 6), "up"), rank("Least often inside", bySym.slice(-6).reverse(), "down"))),
     nextSteps(go, null),
   ];
+}
+
+// The weekly range study (data/range_study.json): will the predicted range get narrower?
+function rangeStudyCard(S) {
+  if (!S || !S.current || !S.challenger) return null;
+  const pct = (x) => (x == null ? "-" : Math.round(x * 1000) / 10 + "%");
+  return h("section", { class: "card reveal", style: { marginTop: "16px" } },
+    h("div", { class: "card-h" }, h("h3", { text: "Will the range get narrower?" }), h("span", { class: "pill " + (S.ready ? "good" : "amber"), text: S.ready ? "candidate ready" : "keep current range" })),
+    h("div", { class: "card-b" },
+      h("p", { text: "Every Sunday a fixed alternative is tested: ranges that widen when a stock has recently been jumpy and narrow when it has been calm, re-tuned to keep the 9-in-10 promise. A narrower range is only useful if the close still lands inside it about 9 times in 10." }),
+      h("div", { class: "scroll-x" }, h("table", { class: "tbl" },
+        h("thead", {}, h("tr", {}, h("th", { text: "" }), h("th", { class: "n", text: "CLOSES INSIDE" }), h("th", { class: "n", text: "AVERAGE WIDTH" }), h("th", { class: "n", text: "SCORE (LOWER IS BETTER)" }))),
+        h("tbody", {},
+          h("tr", {}, h("td", {}, h("b", { text: "Current range" })), h("td", { class: "n", text: pct(S.current.coverage) }), h("td", { class: "n", text: S.current.avg_width + "%" }), h("td", { class: "n", text: String(S.current.score) })),
+          h("tr", {}, h("td", { text: "Alternative" }), h("td", { class: "n", text: pct(S.challenger.coverage) }), h("td", { class: "n", text: S.challenger.avg_width + "%" }), h("td", { class: "n", text: String(S.challenger.score) }))))),
+      h("p", { class: "muted small", text: `Decision: ${S.decision}. Rule, fixed in advance: ${S.rule}. Ranges will follow how volatile the market is; they are not expected to shrink steadily week by week.` })));
 }
 
 function nextSteps(go, sym) {
