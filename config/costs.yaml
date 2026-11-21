@@ -27,6 +27,17 @@ slippage:
     - {min_turnover_cr: 0,   per_side: 0.0015}    # 0.15%
   stop_exit_multiplier: 1.5
 
+# Delivery (held overnight) trades, used only by the multi-day research (pipeline/research.py).
+# Taxes are higher than intraday, and the depository charges a flat fee on every sale.
+# VERIFY against a delivery contract note from your broker.
+delivery:
+  brokerage_pct_per_order: 0.0003   # many discount brokers charge 0 on delivery; kept conservative
+  brokerage_max_per_order: 20.0
+  stt_buy: 0.001                    # 0.1% on the buy side
+  stt_sell: 0.001                   # 0.1% on the sell side
+  stamp_duty_buy: 0.00015           # 0.015% on the buy side
+  dp_charge_per_sell: 15.93         # rupees per stock sold, including GST (varies by broker)
+
 # Reference account used for published rupee figures; the UI rescales for the
 # capital and risk the user types in.
 reference:

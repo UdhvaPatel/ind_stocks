@@ -162,6 +162,13 @@ python -m pipeline.run_weekly            (Sunday training and backtest; takes ab
 ## D. Good to know
 
 - **Name.** I called the site "Dalal Desk" (after Dalal Street). To rename it, tell me the name you want.
+- **Home page.** The site now opens on a simple Home page: choose a stock, see the plan for the next market
+  day, and see how past predictions did in rupees. The detailed pages are under **More** (Pro view, Track
+  record, Archive, How it works).
+- **Paper trading.** On Home, press **I'd follow this plan**. **My journal** shows what would have happened after
+  that market day closes. It is saved only in the browser you used, so a different phone or browser has its own journal.
+- **Strategy research.** How it works now shows the test of 30 trading rules (none beat simply holding the stocks
+  after costs). It re-runs by itself every Sunday on the newest data.
 - **Help for newcomers.** First-time visitors see a "New here?" card on the Today page; "Got it" hides it
   for good on that browser. The round **?** button at the bottom right opens a plain-English glossary at any time.
 - **Checking accuracy.** Open **Accuracy check** (third tab). Pick a stock, or "All 50 stocks together",

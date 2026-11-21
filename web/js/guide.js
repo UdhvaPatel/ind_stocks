@@ -6,7 +6,7 @@ export const STEPS = [
   { n: "1", title: "Pick a company", text: "Choose any of the 50 big Indian companies from the list on the left, or tap a tile in the coloured grid." },
   { n: "2", title: "Read the verdict", text: "“No trade” means the tool found no tested reason to act. That is the honest answer on most days." },
   { n: "3", title: "Try your own numbers", text: "On “Make a plan”, type an amount and a goal. The site tells you whether that goal is realistic." },
-  { n: "4", title: "Check its honesty", text: "“Track record” shows how often the tool has been right, including when it was wrong." },
+  { n: "4", title: "Practise for free", text: "Press “I'd follow this plan” on Home; “My journal” shows how it would have gone, with pretend money." },
 ];
 
 export const GLOSSARY = [
@@ -108,7 +108,7 @@ export function skeleton(route) {
   const block = (lines, tall) => h("div", { class: "card sk-card" }, bar("38%", "11px"), tall ? h("div", { class: "sk sk-tall" }) : null,
     Array.from({ length: lines }, (_, i) => bar(`${92 - i * 13}%`)));
   const loader = h("div", { class: "sk-loader", role: "status" }, h("span", { class: "bars", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("i"), h("i")),
-    h("span", { text: { today: "Reading the latest prices…", plan: "Getting the plan levels…", track: "Adding up the scoreboard…", archive: "Opening the archive…", how: "Loading…" }[route] || "Loading…" }));
+    h("span", { text: { home: "Preparing your market view…", journal: "Opening your journal…", accuracy: "Lining up predictions and real prices…", today: "Reading the latest prices…", plan: "Getting the plan levels…", track: "Adding up the scoreboard…", archive: "Opening the archive…", how: "Loading…" }[route] || "Loading…" }));
   if (route === "today") {
     return h("div", { class: "sk-wrap" }, loader, h("div", { class: "desk" },
       h("div", { class: "col" }, block(7)), h("div", { class: "col" }, block(2), block(3, true), block(4)), h("div", { class: "col" }, block(6), block(3))));

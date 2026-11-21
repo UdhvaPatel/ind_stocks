@@ -1,9 +1,10 @@
 // How it works: method, limits, data quality, in plain language.
 import { clear, fmt, fmtDate, getJSON, h, reveal } from "./core.js";
+import { researchSection } from "./research.js";
 
 export async function renderHow(root, ctx) {
   const { meta } = ctx;
-  const q = await getJSON("quality.json", { optional: true });
+  const [q, research] = await Promise.all([getJSON("quality.json", { optional: true }), getJSON("research.json", { optional: true })]);
   const c = meta.costs, v = meta.variants_tried || {};
   const sec = (title, ...kids) => h("section", { class: "card reveal" }, h("div", { class: "card-b" }, h("h2", { text: title }), kids));
   const ul = (...items) => h("ul", {}, items.map((t) => h("li", {}, t)));
@@ -12,6 +13,7 @@ export async function renderHow(root, ctx) {
   clear(root).append(
     h("div", { class: "page-h" }, h("div", {}, h("h1", { text: "How it works, and its limits" }),
       h("p", { text: "Short-term stock prices are close to a random walk. This tool does not claim to predict them. It writes down scenarios and what-if levels before the market opens, then measures itself in public." }))),
+    research ? h("div", { style: { marginBottom: "16px" } }, researchSection(research)) : null,
     h("div", { class: "prose" },
       sec("One session at a time",
         ul(["Around ", b("06:00 IST"), " on each trading day a plan for that day is built from data up to the previous close plus the overnight US market move, and committed to a public ledger. The commit time is the proof that it was written beforehand."],

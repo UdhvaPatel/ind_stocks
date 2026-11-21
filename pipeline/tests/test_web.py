@@ -41,9 +41,20 @@ def test_compare_file_lines_up_forecast_and_real_close(tmp_path):
     json.dumps(out, allow_nan=False)
     assert out["days"] == ["2026-11-13", "2026-11-16"] and out["track"] == ["backtest", "live"]
     assert out["daily"][1] == [0.0, 0.0, 0.0, -3.0, 1]
-    assert out["stocks"]["AAA"] == [[0, 100.0, -2.0, 0.1, 2.0, 101.0, 1.0, 0.55, 1, 1],
-                                    [1, 100.0, -2.0, 0.1, 2.0, 97.0, -3.0, 0.55, 0, 0]]
+    none = [None, None, None, None, None, [None, None, None], None]
+    assert out["stocks"]["AAA"] == [[0, 100.0, -2.0, 0.1, 2.0, 101.0, 1.0, 0.55, 1, 1, *none],
+                                    [1, 100.0, -2.0, 0.1, 2.0, 97.0, -3.0, 0.55, 0, 0, *none]]
     assert "BBB" not in out["stocks"]                                    # void and rangeless rows are left out
+
+    planned = {**row("CCC", 1.5, True), "call": {"call": "NEUTRAL", "kind": "breakout"}}
+    planned["plan"] = {"kind": "breakout", "levels": {"entry": 101.0, "stop": 99.0},
+                       "outcome": {"status": "time", "r": 0.42, "ret_pct": 0.81, "fill": 101.05, "exit": 101.9}}
+    planned["rules"] = {"breakout": {"status": "time", "r": 0.42},                   # older pages: no ret_pct here
+                        "pullback": {"status": "stopped", "r": -1.1, "ret_pct": -2.3},
+                        "gap_reversal": {"status": "not_triggered", "r": None}}
+    day("2026-11-18", "live", [planned], {"dir_hit": 1.0, "coverage": 1.0, "up_share": 1.0, "avg_ret_pct": 1.5})
+    out = publish.clean(publish.compare_file(tmp_path, "1.0.0"))
+    assert out["stocks"]["CCC"][0][10:] == ["breakout", "time", 0.81, 101.0, 99.0, [0.81, -2.3, "n"], "U"]
     assert publish.compare_file(tmp_path / "missing", "1.0.0")["days"] == []
 
 

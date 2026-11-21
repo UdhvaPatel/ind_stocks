@@ -8,6 +8,9 @@
 <title>Dalal Desk · one-session plans for Nifty 50</title>
 <meta name="description" content="Pre-committed one-session plans for Nifty 50 stocks, scored honestly against official NSE data. Educational, not investment advice.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e14'/%3E%3Cpath d='M9 22V12m0 3h0M16 25V7m0 4h0M23 20v-9' stroke='%23ff9f43' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="styles.css">
 <script>
   // Theme is applied before first paint to avoid a flash.
@@ -41,7 +44,7 @@
 
 <header class="top">
   <div class="top-row">
-    <a class="brand" href="#/today" aria-label="Dalal Desk home">
+    <a class="brand" href="#/home" aria-label="Dalal Desk home">
       <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
         <rect width="32" height="32" rx="8" class="bm-bg"/>
         <path d="M9 22V12M16 25V7M23 20v-9" class="bm-bars"/>
@@ -49,12 +52,19 @@
       <span class="brand-name">Dalal<b>Desk</b></span>
     </a>
     <nav class="nav" aria-label="Main">
-      <a href="#/today" data-route="today">Today</a>
+      <a href="#/home" data-route="home">Home</a>
       <a href="#/plan" data-route="plan">Make a plan</a>
-      <a href="#/accuracy" data-route="accuracy">Accuracy check</a>
-      <a href="#/track" data-route="track">Track record</a>
-      <a href="#/archive" data-route="archive">Archive</a>
-      <a href="#/how" data-route="how">How it works</a>
+      <a href="#/accuracy" data-route="accuracy">Accuracy</a>
+      <a href="#/journal" data-route="journal">My journal</a>
+      <details class="nav-more" id="navMore">
+        <summary>More</summary>
+        <div class="nav-menu">
+          <a href="#/today" data-route="today">Pro view <small>charts and every statistic</small></a>
+          <a href="#/track" data-route="track">Track record <small>the full scoreboard</small></a>
+          <a href="#/archive" data-route="archive">Archive <small>any past day</small></a>
+          <a href="#/how" data-route="how">How it works <small>method and limits</small></a>
+        </div>
+      </details>
     </nav>
     <div class="top-right">
       <div class="clock" title="All times on this site are India Standard Time (IST), wherever you are.">

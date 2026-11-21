@@ -4,13 +4,15 @@ import { renderAccuracy } from "./js/accuracy.js";
 import { renderArchive } from "./js/archive.js";
 import { openHelp, pointerEffects, simpleNote, skeleton, welcomeCard } from "./js/guide.js";
 import { renderHow } from "./js/how.js";
+import { renderHome } from "./js/home.js";
+import { renderJournal } from "./js/journal.js";
 import { renderPlan } from "./js/plan.js";
 import { renderToday } from "./js/today.js";
 import { renderTrack } from "./js/track.js";
 
 const OPEN = 9 * 60 + 15, CLOSE = 15 * 60 + 30;
 const view = document.getElementById("view");
-const routes = { today: renderToday, plan: renderPlan, accuracy: renderAccuracy, track: renderTrack, archive: renderArchive, how: renderHow };
+const routes = { home: renderHome, journal: renderJournal, today: renderToday, plan: renderPlan, accuracy: renderAccuracy, track: renderTrack, archive: renderArchive, how: renderHow };
 let ctx = null;
 
 // ------------------------------------------------------------------- intro
@@ -138,7 +140,7 @@ function banner(meta) {
 function parseHash() {
   const raw = location.hash.replace(/^#\/?/, "");
   const [path, query] = raw.split("?");
-  return { route: routes[path] ? path : "today", params: new URLSearchParams(query || "") };
+  return { route: routes[path] ? path : "home", params: new URLSearchParams(query || "") };
 }
 function go(route, params = {}) {
   const q = new URLSearchParams(params).toString();
@@ -150,6 +152,9 @@ async function render() {
   const { route, params } = parseHash();
   const token = ++renderToken;                               // the last navigation wins
   document.querySelectorAll(".nav a").forEach((a) => a.classList.toggle("on", a.dataset.route === route));
+  const more = document.getElementById("navMore");
+  if (more) { more.open = false; more.classList.toggle("on", !!more.querySelector(`a[data-route="${route}"]`)); }
+  document.body.dataset.route = route;
   view.style.opacity = "0.55";
   progress(true);
   // Placeholders appear only if the page takes a moment, so quick loads do not flicker.

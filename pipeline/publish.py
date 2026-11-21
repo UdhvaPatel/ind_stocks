@@ -339,7 +339,8 @@ def day_summary(day: str, scores: list[dict], track: str, model_version: str) ->
         if kind and kind in s.get("plans", {}):
             row["plan"] = {"kind": kind, "levels": (s.get("plan_levels") or {}).get(kind),
                            "outcome": s["plans"][kind]}
-        row["rules"] = {k: {"status": v["status"], "r": v["r"]} for k, v in s.get("plans", {}).items()}
+        row["rules"] = {k: {"status": v["status"], "r": v["r"], "ret_pct": v.get("ret_pct")}
+                        for k, v in s.get("plans", {}).items()}
         rows.append(row)
     scored = [x for x in rows if x["status"] == "scored" and x.get("dir_correct") is not None]
     n = len(scored)
@@ -359,7 +360,19 @@ def compare_file(day_root: Path, model_version: str) -> dict:
       [day index, previous close, p05, p50, p95, actual close, actual change %, chance up,
        direction right (1/0), close inside the 90% range (1/0)]
     The range is in % of the previous close; the page converts it to rupees.
+    Then the plan shown that day and how it ended, so the page can say what following it
+    would have earned:
+      [..., plan kind, outcome status, net % return on the money put in, entry, stop,
+       [breakout, dip buy, gap reversal], the day's advice ("N" no trade, "U" neutral, "F" favourable)]
+    The last list gives each rule's net % return that day: a number when it bought,
+    "n" when it never triggered, null when not recorded. Returns are after charges.
     """
+    def rule_ret(v):
+        if not isinstance(v, dict):
+            return None
+        if v.get("status") in ("not_triggered", "cancelled", "none"):
+            return "n"
+        return r(v.get("ret_pct"), 3)
     days, tracks, daily, stocks = [], [], [], {}
     paths = sorted(p for p in day_root.glob("*/summary.json")) if day_root.exists() else []
     for path in paths:
@@ -375,7 +388,15 @@ def compare_file(day_root: Path, model_version: str) -> dict:
             vals = [row.get("prev_close"), *rng, act.get("close"), act.get("ret_pct"), row.get("p_up")]
             if any(r(v, 6) is None for v in vals):
                 continue
-            rows.append((row["symbol"], vals, row.get("dir_correct"), row.get("inside")))
+            plan = row.get("plan") or {}
+            lv, oc = plan.get("levels") or {}, plan.get("outcome") or {}
+            per_rule = dict(row.get("rules") or {})
+            if plan.get("kind"):                       # the shown plan's full outcome has its return
+                per_rule[plan["kind"]] = {**per_rule.get(plan["kind"], {}), **oc}
+            rows.append((row["symbol"], vals, row.get("dir_correct"), row.get("inside"),
+                         [plan.get("kind"), oc.get("status"), r(oc.get("ret_pct"), 3), r(lv.get("entry"), 2), r(lv.get("stop"), 2),
+                          [rule_ret(per_rule.get(k)) for k in ("breakout", "pullback", "gap_reversal")],
+                          {"NO_TRADE": "N", "NEUTRAL": "U", "FAVOURABLE": "F"}.get((row.get("call") or {}).get("call"))]))
         if not rows:
             continue
         i = len(days)
@@ -384,10 +405,10 @@ def compare_file(day_root: Path, model_version: str) -> dict:
         s = day.get("summary") or {}
         daily.append([r(s.get("dir_hit"), 3), r(s.get("coverage"), 3), r(s.get("up_share"), 3),
                       r(s.get("avg_ret_pct"), 3), len(rows)])
-        for sym, (prev, p05, p50, p95, close, ret, p_up), right, inside in rows:
+        for sym, (prev, p05, p50, p95, close, ret, p_up), right, inside, plan in rows:
             stocks.setdefault(sym, []).append([
                 i, r(prev, 2), r(p05, 3), r(p50, 3), r(p95, 3), r(close, 2), r(ret, 3), r(p_up, 4),
-                None if right is None else int(bool(right)), None if inside is None else int(bool(inside))])
+                None if right is None else int(bool(right)), None if inside is None else int(bool(inside)), *plan])
     return {**stamp(model_version), "days": days, "track": tracks, "daily": daily,
             "stocks": dict(sorted(stocks.items()))}
 

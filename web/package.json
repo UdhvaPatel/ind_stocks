@@ -2,5 +2,5 @@
   "private": true,
   "type": "module",
   "description": "Marks the site's scripts as ES modules so Node can run the tests in web/tests. The site itself has no build step and no dependencies.",
-  "scripts": { "test": "node --test tests/accuracy.test.mjs tests/insight.test.mjs tests/planlogic.test.mjs tests/plan_missing.test.mjs tests/today_whatif.test.mjs" }
+  "scripts": { "test": "node --test tests/home.test.mjs tests/journal.test.mjs tests/accuracy.test.mjs tests/insight.test.mjs tests/planlogic.test.mjs tests/plan_missing.test.mjs tests/today_whatif.test.mjs" }
 }
