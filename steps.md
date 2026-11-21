@@ -12,22 +12,22 @@ Status key: `[ ]` to do, `[x]` done (tick them yourself as you go).
 After this, nothing depends on your computer. GitHub runs the jobs on its own schedule
 (06:00 IST plan, 18:00 IST result, Sunday training) and hosts the website.
 
-Your code repository is **`UdhvaPatel/ind_stocks`**. The code is already uploaded there (done 20 Nov 2026).
+Your code repository is **`UdhvaPatel/ind_stocks`**. Set up and running on GitHub since 21 Nov 2026 (IST): the site is live at https://udhvapatel.github.io/ind_stocks/ and the daily jobs run by themselves. You no longer need the daily routine in section C.
 
 - [x] **A0. Code uploaded** to https://github.com/UdhvaPatel/ind_stocks (branch `main`).
 - [x] **A0b. Vault prepared** on your computer (`D:\Projects\ind_stocks\vault`, committed, not uploaded yet).
 
-- [ ] **A1. Make the repository public** (free GitHub Pages only works for public repositories).
+- [x] **A1. Make the repository public** (free GitHub Pages only works for public repositories).
   1. Open https://github.com/UdhvaPatel/ind_stocks/settings
   2. Scroll to the bottom, to **Danger Zone** → **Change repository visibility** → **Change visibility**
   3. Choose **Make public**, then confirm each prompt (GitHub asks you to type `UdhvaPatel/ind_stocks`
      and may ask for your password or a code from your phone)
 
-- [ ] **A2. Turn on GitHub Pages.**
+- [x] **A2. Turn on GitHub Pages.**
   1. Open https://github.com/UdhvaPatel/ind_stocks/settings/pages
   2. Under **Build and deployment**, set **Source** to **GitHub Actions**
 
-- [ ] **A3. Publish the website now.**
+- [x] **A3. Publish the website now.**
   1. Open https://github.com/UdhvaPatel/ind_stocks/actions
   2. If GitHub asks, click **I understand my workflows, go ahead and enable them**
   3. In the left list click **pipeline** → **Run workflow** → Job: **deploy** → **Run workflow**
@@ -38,7 +38,7 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. The code is already uploade
   The steps below let GitHub also *update the data* every day. Until they are done, keep running
   the daily routine on your own computer (section C) and push the result.
 
-- [ ] **A4. Create the private vault repository** (holds raw price data that must not be published).
+- [x] **A4. Create the private vault repository** (holds raw price data that must not be published).
   1. Go to https://github.com/new
   2. Repository name: `ind-stocks-vault` (exactly this; the workflow looks for it)
   3. Visibility: **Private**
@@ -51,7 +51,7 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. The code is already uploade
      git push -u origin main
      ```
 
-- [ ] **A5. Create an access token so the daily jobs can read and write the vault.**
+- [x] **A5. Create an access token so the daily jobs can read and write the vault.**
   1. Go to https://github.com/settings/personal-access-tokens/new
   2. Token name: `ind-stocks-vault-writer`
   3. Expiration: 1 year. **Put a reminder in your calendar to renew it**: when it expires the daily jobs stop.
@@ -59,13 +59,13 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. The code is already uploade
   5. Permissions → Repository permissions → **Contents: Read and write**
   6. Click **Generate token** and copy it (it is shown only once). Do not paste it into a chat.
 
-- [ ] **A6. Store the token as a secret.**
+- [x] **A6. Store the token as a secret.**
   1. Open https://github.com/UdhvaPatel/ind_stocks/settings/secrets/actions
   2. Click **New repository secret**
   3. Name: `VAULT_TOKEN`   Value: the token from A5
   4. Click **Add secret**
 
-- [ ] **A7. Start the data jobs once by hand.**
+- [x] **A7. Start the data jobs once by hand.**
   1. Open https://github.com/UdhvaPatel/ind_stocks/actions → **pipeline** → **Run workflow**
   2. Job: **weekly** → **Run workflow**, and wait for the green tick (about 10 minutes)
   From then on GitHub runs the 06:00 plan, the evening result and Sunday training by itself,
