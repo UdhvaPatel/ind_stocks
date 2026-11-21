@@ -44,6 +44,7 @@ def main() -> None:
     if plan_status == "not_issued":
         plan_status = "draft"                 # an evening run never issues; it only drafts
     jobs.publish_site(engine, plan_status, for_date, status)
+    jobs.write_health("eod", status)
     jobs.log(f"eod done: new sessions {[d.isoformat() for d in new_days]}, scored {scored}, "
              f"draft plan for {for_date}")
 

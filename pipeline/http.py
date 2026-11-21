@@ -18,6 +18,11 @@ class FetchError(RuntimeError):
     """A request failed after all retries, or was refused."""
 
 
+class FormatError(FetchError):
+    """A file arrived but not in the expected shape (renamed columns, maintenance page, partial).
+    A subclass of FetchError so every job treats it like a failed download: logged, retried later."""
+
+
 class Http:
     def __init__(self, min_interval: float = 0.4, timeout: float = 30.0, retries: int = 4):
         self.session = requests.Session()

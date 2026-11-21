@@ -6,6 +6,7 @@ that finds nothing to do exits without changing anything.
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, datetime, time, timedelta, timezone
 
 from . import config, dataset, ingest, ledger, publish, score, store, universe, validate, walkforward
@@ -102,8 +103,11 @@ def score_pending(engine: Engine, replay_fn=None) -> list[str]:
             bar = None if row is None else {"open": row.open, "high": row.high, "low": row.low, "close": row.close}
             plan_results = replay_fn(rec, d) if (replay_fn and bar and not void) else None
             s = score.resolve(rec, bar, void, engine.ccfg, plan_results)
-        elif d in closed or (last is not None and d < last):
+        elif d in closed:                                   # confirmed: listed holiday or proven by later data
             s = score.resolve(rec, None, "no trading session on this date")
+        elif last is not None and d < last:
+            log(f"{rec['for_date']}: official file still missing; the prediction stays unscored until it arrives")
+            continue
         else:
             continue                                        # session not over or file not published yet
         s["setup"] = rec["inputs"].get("setup")
@@ -365,6 +369,30 @@ def quality_report(engine: Engine) -> dict:
                        if any(it["issue"] in ("estimated_corporate_action", "vendor_adjustment_artefact")
                               for it in items)}}
     publish.write_json(config.DATA_DIR / "quality.json", out, indent=1)
+    return out
+
+
+def write_health(job: str, status: dict) -> dict:
+    """data/health.json: when each job last finished, what each source returned, and when the
+    vault token expires (the workflow passes VAULT_TOKEN_EXPIRES). Read by people and monitors."""
+    path = config.DATA_DIR / "health.json"
+    try:
+        old = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except ValueError:
+        old = {}
+    meta_path = config.DATA_DIR / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    now = config.now_ist().isoformat(timespec="seconds")
+    jobs_ = {**(old.get("jobs") or {}), job: {"last_finished": now}}
+    expires = os.environ.get("VAULT_TOKEN_EXPIRES") or (old.get("vault_token") or {}).get("expires")
+    out = {"schema": 1, "generated_at": now, "jobs": jobs_,
+           "sources": {k: (v if isinstance(v, (str, int, float)) else "ok" if v else "unavailable")
+                       for k, v in (status.get("sources") or {}).items()},
+           "last_eod_date": meta.get("last_eod_date"), "plan_for_date": meta.get("plan_for_date"),
+           "plan_status": meta.get("plan_status"), "pipeline_status": meta.get("pipeline_status"),
+           "vault_token": {"expires": expires},
+           "runner": "github-actions" if os.environ.get("GITHUB_ACTIONS") == "true" else "local"}
+    publish.write_json(path, out, indent=1)
     return out
 
 

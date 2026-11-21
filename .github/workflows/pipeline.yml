@@ -43,10 +43,13 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  attestations: write      # independent timestamp for each morning ledger commit
 
-# Never let two runs push at the same time; a queued run waits for the one before it.
+# Data jobs never run at the same time (a queued run waits for the one before it).
+# Push-triggered deploys only publish what is committed, so they get their own queue and
+# can never cancel a waiting scheduled job.
 concurrency:
-  group: pipeline
+  group: ${{ github.event_name == 'push' && 'pages-deploy' || 'pipeline' }}
   cancel-in-progress: false
 
 jobs:
@@ -63,6 +66,7 @@ jobs:
       - name: Decide which job this run is
         id: pick
         run: |
+          FINAL=false
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             JOB="${{ inputs.job }}"
           elif [ "${{ github.event_name }}" = "push" ]; then
@@ -70,24 +74,38 @@ jobs:
           else
             case "${{ github.event.schedule }}" in
               "30 4 * * 0") JOB=weekly ;;
-              "30 0 * * 1-5"|"0 1 * * 1-5"|"30 1 * * 1-5"|"0 2 * * 1-5"|"30 2 * * 1-5") JOB=premarket ;;
+              "30 2 * * 1-5") JOB=premarket; FINAL=true ;;               # 08:00 IST, last morning rung
+              "30 0 * * 1-5"|"0 1 * * 1-5"|"30 1 * * 1-5"|"0 2 * * 1-5") JOB=premarket ;;
+              "30 16 * * 1-6") JOB=eod; FINAL=true ;;                     # 22:00 IST, last evening rung
               *) JOB=eod ;;
             esac
           fi
           echo "job=$JOB" >> "$GITHUB_OUTPUT"
-          echo "Running: $JOB"
+          echo "final=$FINAL" >> "$GITHUB_OUTPUT"
+          echo "Running: $JOB (last rung of the ladder: $FINAL)"
 
       - name: Check out the site repository
         uses: actions/checkout@v4
 
-      - name: Check that the vault can be reached
+      - name: Check that the vault can be reached, and when its token expires
         if: steps.pick.outputs.job != 'deploy'
         env:
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
         run: |
           if [ -z "$VAULT_TOKEN" ]; then
-            echo "::error::The VAULT_TOKEN secret is not set, so the private ind-stocks-vault repository cannot be read. Follow steps.md section A (A2 to A4). The website itself can still be published with Run workflow -> job: deploy."
+            echo "::error::The VAULT_TOKEN secret is not set, so the private ind-stocks-vault repository cannot be read. Follow steps.md section A. The website itself can still be published with Run workflow -> job: deploy."
             exit 1
+          fi
+          EXP=$(curl -sS -o /dev/null -D - -H "Authorization: Bearer $VAULT_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository_owner }}/ind-stocks-vault" \
+                | tr -d '\r' | awk -F': ' 'tolower($1)=="github-authentication-token-expiration"{print $2}')
+          if [ -n "$EXP" ]; then
+            echo "VAULT_TOKEN_EXPIRES=$EXP" >> "$GITHUB_ENV"
+            LEFT=$(( ( $(date -d "$EXP" +%s) - $(date +%s) ) / 86400 ))
+            echo "vault token expires $EXP ($LEFT days left)"
+            if [ "$LEFT" -lt 30 ]; then
+              echo "::warning::The VAULT_TOKEN expires in $LEFT days ($EXP). Make a new one (steps.md A5-A6) or the daily jobs will stop."
+            fi
           fi
 
       - name: Check out the private vault (raw data)
@@ -99,13 +117,11 @@ jobs:
           path: vault
 
       - uses: actions/setup-python@v5
-        if: steps.pick.outputs.job != 'deploy'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
-        if: steps.pick.outputs.job != 'deploy'
         run: pip install -r requirements.txt
 
       - name: Run the job
@@ -129,6 +145,10 @@ jobs:
             git push -q
           fi
 
+      # A broken or half-written publish is never committed or deployed: the run fails here.
+      - name: Validate the published files
+        run: python -m pipeline.validate_site
+
       - name: Commit the published data and the ledger
         id: commit
         if: steps.pick.outputs.job != 'deploy'
@@ -144,28 +164,66 @@ jobs:
             git push -q
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^data/ledger/'; then
+            echo "ledger=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Records, in GitHub's public attestation log (Sigstore), that this workflow run produced
+      # these ledger files at this time. Unlike a git date, it cannot be set by hand.
+      - name: Timestamp the ledger independently
+        if: steps.commit.outputs.ledger == 'true'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "data/ledger/*.jsonl"
+
+      # If an earlier deploy failed, the live site is behind the repository: deploy again.
+      - name: Is the live site behind?
+        id: live
+        run: |
+          WANT=$(git rev-parse HEAD)
+          HAVE=$(curl -fsS -m 15 "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/build.txt" || echo none)
+          echo "live build: $HAVE, repository: $WANT"
+          if [ "$HAVE" != "$WANT" ]; then echo "behind=true" >> "$GITHUB_OUTPUT"; fi
 
       # A push made with the default token does not start another workflow, so
       # the site is deployed here, in the same run.
       - name: Assemble the site
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
+        id: site
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy' || steps.live.outputs.behind == 'true'
         run: |
           mkdir -p _site
           cp -r web/. _site/
           rm -rf _site/tests _site/package.json      # test files are not part of the site
           cp -r data _site/data
           rm -rf _site/data/ledger/.gitkeep
+          git rev-parse HEAD > _site/build.txt
           touch _site/.nojekyll
+          echo "go=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/configure-pages@v5
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
+        if: steps.site.outputs.go == 'true'
 
       - uses: actions/upload-pages-artifact@v3
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
+        if: steps.site.outputs.go == 'true'
         with:
           path: _site
 
       - name: Deploy to GitHub Pages
         id: deploy
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
+        if: steps.site.outputs.go == 'true'
         uses: actions/deploy-pages@v4
+
+      # Dead-man's switch: on the last rung of a ladder, fail (GitHub emails the owner) if the
+      # day's work is still missing. Runs after the deploy so the site is updated either way.
+      - name: Is anything missing for today?
+        if: steps.pick.outputs.final == 'true'
+        run: python -m pipeline.check_fresh --job ${{ steps.pick.outputs.job }}
+
+      # Optional outside monitor (for example healthchecks.io): it alerts when this ping stops,
+      # which also catches runs GitHub never started. Set the HEALTHCHECK_URL secret to use it.
+      - name: Ping the outside monitor
+        if: success() && steps.pick.outputs.job != 'deploy'
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then curl -fsS -m 10 --retry 3 "$HEALTHCHECK_URL" > /dev/null && echo pinged; else echo "no HEALTHCHECK_URL set"; fi

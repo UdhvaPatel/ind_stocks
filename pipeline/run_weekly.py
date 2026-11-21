@@ -37,6 +37,7 @@ def main() -> None:
     for_date = engine.calendar.next_trading_day(engine.last_session)
     plan_status = "scored" if ledger.has_plan_for(for_date, version) else "draft"
     jobs.publish_site(engine, plan_status, for_date, status)
+    jobs.write_health("weekly", status)
     jobs.log("weekly done")
 
 

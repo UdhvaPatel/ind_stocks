@@ -16,7 +16,7 @@ from datetime import date
 
 import pandas as pd
 
-from .http import Http
+from .http import FormatError, Http
 
 BASE = "https://nsearchives.nseindia.com"
 
@@ -56,6 +56,9 @@ def parse_sec_bhav(text: str) -> pd.DataFrame:
     """Parse sec_bhavdata_full into a tidy frame (all series, all symbols)."""
     df = pd.read_csv(io.StringIO(text), skipinitialspace=True, na_values=["-", ""])
     df.columns = [c.strip() for c in df.columns]
+    missing = [c for c in SEC_COLS if c not in df.columns]
+    if missing:
+        raise FormatError(f"NSE stock file is missing columns {missing}; the format may have changed")
     df = df.rename(columns=SEC_COLS)[list(SEC_COLS.values())]
     for col in ("symbol", "series"):
         df[col] = df[col].astype(str).str.strip()

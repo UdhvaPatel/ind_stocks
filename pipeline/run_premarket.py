@@ -42,6 +42,7 @@ def main() -> None:
         status["pipeline_status"] = "degraded"
         status["message"] = "Some overnight data could not be refreshed; the plan uses the last good values."
     jobs.publish_site(engine, plan_status, for_date, status)
+    jobs.write_health("premarket", status)
     jobs.log(f"premarket done: plan for {for_date} is '{plan_status}'")
 
 
