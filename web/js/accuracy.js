@@ -28,7 +28,7 @@ export async function renderAccuracy(root, ctx) {
   if (!PERIODS[state.period]) state.period = "60";
 
   const live = data.track.filter((t) => t === "live").length;
-  root.append(guideCard(live, data.days.length, go));
+  root.append(guideCard(live, data.days.length, go, data.track.filter((x) => x === "unverified").length));
 
   const body = h("div", { class: "stack" });
   const unitSeg = h("div", { class: "seg", role: "tablist", "aria-label": "Show prices or percent" });
@@ -63,7 +63,7 @@ export async function renderAccuracy(root, ctx) {
 }
 
 // --------------------------------------------------------------- how to read
-function guideCard(live, total, go) {
+function guideCard(live, total, go, unverified = 0) {
   const item = (swatch, title, text) => h("div", { class: "acc-key" }, swatch, h("div", {}, h("b", { text: title }), h("p", { text })));
   return h("section", { class: "card acc-guide" },
     h("div", { class: "card-b" },
@@ -74,8 +74,9 @@ function guideCard(live, total, go) {
         item(h("span", { class: "sw-line", "aria-hidden": "true" }), "Line = the real price", "How the stock actually moved, day by day.")),
       h("p", { class: "muted small acc-note" },
         h("span", { class: "pill good", text: `${live} live day${live === 1 ? "" : "s"}` }), " ",
-        h("span", { class: "pill amber", text: `${total - live} backtest days` }), " ",
-        `Live days (shaded) were predicted before the market opened; they are the ones that really count. Backtest days were replayed afterwards by the same code using only the data available before each day, so you have something to compare from the start. `,
+        h("span", { class: "pill amber", text: `${total - live - unverified} backtest days` }), " ",
+        unverified ? h("span", { class: "pill", text: `${unverified} not proven` }) : null, unverified ? " " : null,
+        `Live days (shaded) were written by the scheduled job before the market opened and committed publicly; they are the ones that really count. Backtest days were replayed afterwards by the same code using only the data available before each day. ${unverified ? "“Not proven” days were made outside the scheduled job, so when they were written cannot be checked; they are shown like backtest days. " : ""}`,
         h("button", { class: "linkish", type: "button", text: "What do these words mean?", onclick: () => openHelp(go) }))));
 }
 

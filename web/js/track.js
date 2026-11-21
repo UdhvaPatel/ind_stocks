@@ -9,6 +9,12 @@ const early = () => h("span", { class: "early", text: "too early" });
 export async function renderTrack(root) {
   const [track, learning] = await Promise.all([getJSON("track.json"), getJSON("learning.json", { optional: true })]);
   const liveN = (track.live && track.live.aggregate.scored) || 0;
+  const un = track.unverified;
+  if (track.live && un && un.records) {
+    track.live.unverifiedNote = h("div", { class: "card reveal", style: { padding: "12px 16px" } },
+      h("span", { class: "pill amber", text: "Not counted" }), " ",
+      h("span", { class: "sub", text: `${fmt.int(un.records)} predictions on ${un.days.map((x) => fmtDate(x)).join(", ")} are left out of this record. ${un.note}` }));
+  }
   let which = prefs.get("track", liveN >= track.min_n ? "live" : "backtest");
   if (which === "backtest" && !track.backtest) which = "live";
 
@@ -36,12 +42,16 @@ function board(t, which, minN) {
     h("span", { class: "sub", text: t.note }),
     a.first ? h("span", { class: "muted", text: `  ${fmtDate(a.first)} to ${fmtDate(a.last)} · ${fmt.int(a.days)} sessions · ${fmt.int(a.scored)} predictions${a.void ? ` · ${a.void} void` : ""}` }) : null);
   out.push(note);
+  if (which === "live" && t.unverifiedNote) out.push(t.unverifiedNote);
   if (!a.scored || !a.direction) {
     out.push(h("div", { class: "card headline reveal" }, h("b", { text: "Nothing scored yet. " }),
       "The first live result appears after the first trading day on which a plan was committed at 06:00 IST. Until then the Backtest tab shows how the same code would have done."));
     return out;
   }
-  const d = a.direction, r = a.ranges, tooEarly = a.scored < minN;
+  // Stocks on one day share the overnight signal, so 50 predictions from one day are nearly one
+  // observation: also require enough separate days.
+  const d = a.direction, r = a.ranges, tooEarly = a.scored < minN || (a.days || 0) < 10;
+  const dayCI = d.hit_days && d.hit_days.ci ? `95% range by day ${fmt.prob(d.hit_days.ci[0], 1)} to ${fmt.prob(d.hit_days.ci[1], 1)}` : ci(d.hit.ci);
 
   // Headline sentence adapts to the numbers.
   const skillLo = d.skill_days && d.skill_days.ci ? d.skill_days.ci[0] : null;
@@ -49,9 +59,11 @@ function board(t, which, minN) {
     : skillLo != null && skillLo > 0 ? "a small edge that is unlikely to be luck"
     : d.skill > 0 ? "slightly better than the base rate, but the difference could be luck" : "no reliable edge";
   out.push(h("div", { class: "card headline reveal" },
-    "Direction was right ", h("b", { text: fmt.prob(d.hit.rate, 1) }), ` of the time (${ci(d.hit.ci)}, n = ${fmt.int(d.hit.n)}) against `,
-    h("b", { text: fmt.prob(d.always_up_hit, 1) }), ' for always saying "up": ', h("b", { text: verdict }), ". The 90% range for the close contained the real close ",
-    h("b", { text: fmt.prob(r.close.rate, 1) }), " of the time."));
+    "Direction was right ", h("b", { text: fmt.prob(d.hit.rate, 1) }), ` of the time (${dayCI}, ${fmt.int(a.days)} days) against `,
+    h("b", { text: fmt.prob(d.always_up_hit, 1) }), ' for always saying "up": ', h("b", { text: verdict }), ".",
+    d.hit_open && d.hit_open.mean != null ? [" Measured from the opening price, the part a trader could still use after 09:15, it was right ",
+      h("b", { text: fmt.prob(d.hit_open.mean, 1) }), d.always_up_open_hit != null ? ` (always "up" from the open: ${fmt.prob(d.always_up_open_hit, 1)}).` : "."] : null,
+    " The 90% range for the close contained the real close ", h("b", { text: fmt.prob(r.close.rate, 1) }), " of the time."));
 
   const kpi = (label, value, note, extra, tip) => {
     const el = h("div", { class: "card kpi lift reveal", tabindex: 0 }, h("div", { class: "eyebrow", text: label }),
@@ -59,8 +71,12 @@ function board(t, which, minN) {
     return tip ? withTip(el, () => [tipHead(label), tipNote(tip)]) : el;
   };
   out.push(h("div", { class: "tiles" },
-    kpi("Direction hit rate", tooEarly ? "-" : fmt.prob(d.hit.rate, 1), `vs ${fmt.prob(d.always_up_hit, 1)} for "always up"`, ci(d.hit.ci),
+    kpi("Direction hit rate", tooEarly ? "-" : fmt.prob(d.hit.rate, 1), `vs ${fmt.prob(d.always_up_hit, 1)} for "always up"`, dayCI,
       "How often the side the tool leaned to (above or below 50%) matched the close. Next-day direction for any honest method sits between 50% and 55%."),
+    d.hit_open ? kpi("From the open", tooEarly || d.hit_open.mean == null ? "-" : fmt.prob(d.hit_open.mean, 1),
+      d.always_up_open_hit != null ? `vs ${fmt.prob(d.always_up_open_hit, 1)} for "always up"` : "open to close",
+      d.hit_open.ci ? `95% range by day ${fmt.prob(d.hit_open.ci[0], 1)} to ${fmt.prob(d.hit_open.ci[1], 1)}` : "",
+      "The same lean judged from the opening price to the close. Most of the overnight signal is already in the opening price, which nobody can trade; this is the part that is left.") : null,
     kpi("Direction skill", tooEarly ? "-" : fmt.pct(d.skill * 100, 2), "Brier skill vs the base rate", d.skill_days && d.skill_days.ci ? `per-day range ${fmt.signed(d.skill_days.ci[0], 4)} to ${fmt.signed(d.skill_days.ci[1], 4)}` : "",
       "1 minus (the tool's Brier score / the score of always quoting the stock's historical up-rate). Above zero means the probabilities carried information."),
     kpi("90% range coverage", tooEarly ? "-" : fmt.prob(r.close.rate, 1), "target 90%", ci(r.close.ci),

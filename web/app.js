@@ -19,7 +19,8 @@ let ctx = null;
 function intro() {
   const el = document.getElementById("intro");
   let seen = false;
-  try { seen = sessionStorage.getItem("dd-intro") === "1"; sessionStorage.setItem("dd-intro", "1"); } catch (e) { /* ignore */ }
+  // Once per device, not once per visit: on a slow phone every second counts.
+  try { seen = localStorage.getItem("dd-intro") === "1"; localStorage.setItem("dd-intro", "1"); } catch (e) { /* ignore */ }
   if (seen || reduced()) { el.classList.add("done"); return; }
   const svg = el.querySelector(".intro-candles");
   const closes = [52, 58, 50, 61, 66, 59, 70, 64, 74, 80, 73, 84, 90, 86, 98];
@@ -40,7 +41,7 @@ function intro() {
   const finish = () => { el.classList.add("done"); removeEventListener("keydown", finish); };
   el.addEventListener("click", finish);
   addEventListener("keydown", finish);
-  setTimeout(finish, 3100);
+  setTimeout(finish, 2400);
 }
 
 // ------------------------------------------------------------------- theme
@@ -68,7 +69,7 @@ function startClock(meta) {
   let lastKey = null, lastDate = null;
   const tick = () => {
     const now = istNow(), st = sessionState(now, meta);
-    time.textContent = now.clock;
+    time.textContent = now.clock.slice(0, 5);          // HH:MM: ticking seconds would suggest live prices
     state.textContent = st.label;
     dot.className = "clock-dot " + st.key;
     const fill = document.querySelector(".session-fill");

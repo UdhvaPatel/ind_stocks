@@ -92,7 +92,14 @@ export { ok };
 // --------------------------------------------------------------------- data
 let base = null;
 const cache = new Map();
+// The published site keeps data/ next to index.html; a local preview serves the project root,
+// so the page is at /web/ and data at ../data/. Knowing this saves a probe request on every load.
+function guessBase() {
+  try { return /\/web\/[^/]*$/.test(location.pathname) ? "../data/" : "data/"; } catch (e) { return null; }
+}
 async function findBase() {
+  const guess = guessBase();
+  if (guess) return guess;
   for (const b of ["data/", "../data/"]) {
     try { const r = await fetch(b + "meta.json", { cache: "no-store" }); if (r.ok) return b; } catch (e) { /* try next */ }
   }

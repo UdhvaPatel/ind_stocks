@@ -72,6 +72,24 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. Set up and running on GitHu
   and you can stop the daily routine in section C. Before pushing anything yourself after that,
   run `git pull` first, because GitHub will be adding a data commit every day.
 
+- [ ] **A8. Stop anyone (including a mistake) rewriting history.** Do this for both repositories.
+  1. Open https://github.com/UdhvaPatel/ind_stocks/settings/rules → **New ruleset** → **New branch ruleset**
+  2. Name: `protect main`. Enforcement status: **Active**
+  3. Target branches: **Add target** → **Include default branch**
+  4. Tick **Restrict deletions** and **Block force pushes**. Leave everything else unticked
+     (the daily jobs must still be able to push normally).
+  5. Click **Create**. Repeat at https://github.com/UdhvaPatel/ind-stocks-vault/settings/rules
+- [ ] **A9. Make sure GitHub emails you when a run fails.** Open https://github.com/settings/notifications,
+  find **Actions**, and make sure email notifications are on ("Only notify for failed workflows" is fine).
+  From now on the last morning and evening runs fail on purpose if the day's work is missing, so this email is your alarm.
+- [ ] **A10 (optional). An outside alarm for days GitHub skips a run entirely.** Create a free check at
+  healthchecks.io yourself (period 1 day, grace 12 hours), copy its ping URL, and add it as a repository secret named
+  `HEALTHCHECK_URL` (same place as `VAULT_TOKEN`). If the pings stop, healthchecks.io emails you. Skip this if you prefer.
+
+**Important: plans made on your computer no longer count as live.** Only plans written by GitHub's 06:00 IST job
+(before the 09:15 open) are counted in the live record, because only those can be checked by anyone. Plans made with
+`run_premarket` on your computer are labelled "not proven". So once GitHub runs the jobs, don't run them locally.
+
 ### If something goes wrong on GitHub
 
 - A red cross in the **Actions** tab: click the run, then the red step, and send me the last 30 lines.
