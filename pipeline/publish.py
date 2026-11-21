@@ -351,6 +351,47 @@ def day_summary(day: str, scores: list[dict], track: str, model_version: str) ->
     return {**stamp(model_version), "date": day, "track": track, "summary": summary, "rows": rows}
 
 
+def compare_file(day_root: Path, model_version: str) -> dict:
+    """Predicted range against the real close, for every published day and stock.
+
+    Built only from the day pages already published (data/days/*/summary.json), so it
+    carries nothing new. One row per stock and day:
+      [day index, previous close, p05, p50, p95, actual close, actual change %, chance up,
+       direction right (1/0), close inside the 90% range (1/0)]
+    The range is in % of the previous close; the page converts it to rupees.
+    """
+    days, tracks, daily, stocks = [], [], [], {}
+    paths = sorted(p for p in day_root.glob("*/summary.json")) if day_root.exists() else []
+    for path in paths:
+        try:
+            day = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        rows = []
+        for row in day.get("rows", []):
+            rng, act = row.get("range"), row.get("actual") or {}
+            if row.get("status") != "scored" or not rng or len(rng) != 3:
+                continue
+            vals = [row.get("prev_close"), *rng, act.get("close"), act.get("ret_pct"), row.get("p_up")]
+            if any(r(v, 6) is None for v in vals):
+                continue
+            rows.append((row["symbol"], vals, row.get("dir_correct"), row.get("inside")))
+        if not rows:
+            continue
+        i = len(days)
+        days.append(day.get("date") or path.parent.name)
+        tracks.append(day.get("track") or "backtest")
+        s = day.get("summary") or {}
+        daily.append([r(s.get("dir_hit"), 3), r(s.get("coverage"), 3), r(s.get("up_share"), 3),
+                      r(s.get("avg_ret_pct"), 3), len(rows)])
+        for sym, (prev, p05, p50, p95, close, ret, p_up), right, inside in rows:
+            stocks.setdefault(sym, []).append([
+                i, r(prev, 2), r(p05, 3), r(p50, 3), r(p95, 3), r(close, 2), r(ret, 3), r(p_up, 4),
+                None if right is None else int(bool(right)), None if inside is None else int(bool(inside))])
+    return {**stamp(model_version), "days": days, "track": tracks, "daily": daily,
+            "stocks": dict(sorted(stocks.items()))}
+
+
 def write_day(day: str, scores: list[dict], track: str, model_version: str) -> None:
     write_json(config.DATA_DIR / "days" / day / "summary.json",
                day_summary(day, scores, track, model_version))

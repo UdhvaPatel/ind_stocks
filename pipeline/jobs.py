@@ -167,6 +167,7 @@ def publish_site(engine: Engine, plan_status: str, for_date: date, status: dict)
     publish.write_json(day_root / "index.json",
                        {**publish.stamp(version),
                         "days": [{"date": d, "track": "live" if d in live_days else "backtest"} for d in all_days]})
+    publish.write_json(config.DATA_DIR / "compare.json", publish.compare_file(day_root, version))
     write_track(engine, scores)
     learning_report(engine)
 

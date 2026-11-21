@@ -1,5 +1,6 @@
 // Dalal Desk - app shell: clock (always India time), index strip, ticker, mode banner, router.
 import { arrow, clear, countUp, dir, fmt, fmtDate, fmtStampIST, getJSON, h, istNow, prefs, reduced, s, SCHEMA } from "./js/core.js";
+import { renderAccuracy } from "./js/accuracy.js";
 import { renderArchive } from "./js/archive.js";
 import { openHelp, pointerEffects, simpleNote, skeleton, welcomeCard } from "./js/guide.js";
 import { renderHow } from "./js/how.js";
@@ -9,7 +10,7 @@ import { renderTrack } from "./js/track.js";
 
 const OPEN = 9 * 60 + 15, CLOSE = 15 * 60 + 30;
 const view = document.getElementById("view");
-const routes = { today: renderToday, plan: renderPlan, track: renderTrack, archive: renderArchive, how: renderHow };
+const routes = { today: renderToday, plan: renderPlan, accuracy: renderAccuracy, track: renderTrack, archive: renderArchive, how: renderHow };
 let ctx = null;
 
 // ------------------------------------------------------------------- intro

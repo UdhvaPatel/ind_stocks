@@ -20,7 +20,31 @@ def test_web_suite(path):
 
 
 def test_web_tests_exist():
-    assert {p.name for p in WEB_TESTS} >= {"planlogic.test.mjs", "plan_missing.test.mjs", "today_whatif.test.mjs"}
+    assert {p.name for p in WEB_TESTS} >= {"planlogic.test.mjs", "plan_missing.test.mjs", "today_whatif.test.mjs",
+                                           "insight.test.mjs", "accuracy.test.mjs"}
+
+
+def test_compare_file_lines_up_forecast_and_real_close(tmp_path):
+    def day(date, track, rows, summary):
+        p = tmp_path / date / "summary.json"
+        p.parent.mkdir(parents=True)
+        p.write_text(json.dumps({"date": date, "track": track, "summary": summary, "rows": rows}), encoding="utf-8")
+
+    row = lambda sym, ret, inside: {"symbol": sym, "status": "scored", "prev_close": 100.0, "range": [-2.0, 0.1, 2.0],
+                                    "actual": {"close": 100 + ret, "ret_pct": ret}, "p_up": 0.55, "dir_correct": ret > 0, "inside": inside}
+    day("2026-11-13", "backtest", [row("AAA", 1.0, True), {"symbol": "BBB", "status": "void", "reason": "x"}],
+        {"dir_hit": 1.0, "coverage": 1.0, "up_share": 1.0, "avg_ret_pct": 1.0})
+    day("2026-11-16", "live", [row("AAA", -3.0, False), {**row("BBB", 0.5, True), "range": None}],
+        {"dir_hit": 0.0, "coverage": 0.0, "up_share": 0.0, "avg_ret_pct": -3.0})
+    (tmp_path / "2026-11-17").mkdir()                                    # a folder without a page is skipped
+    out = publish.clean(publish.compare_file(tmp_path, "1.0.0"))
+    json.dumps(out, allow_nan=False)
+    assert out["days"] == ["2026-11-13", "2026-11-16"] and out["track"] == ["backtest", "live"]
+    assert out["daily"][1] == [0.0, 0.0, 0.0, -3.0, 1]
+    assert out["stocks"]["AAA"] == [[0, 100.0, -2.0, 0.1, 2.0, 101.0, 1.0, 0.55, 1, 1],
+                                    [1, 100.0, -2.0, 0.1, 2.0, 97.0, -3.0, 0.55, 0, 0]]
+    assert "BBB" not in out["stocks"]                                    # void and rangeless rows are left out
+    assert publish.compare_file(tmp_path / "missing", "1.0.0")["days"] == []
 
 
 def _symbol(symbol="AAA", **over):

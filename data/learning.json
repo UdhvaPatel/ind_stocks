@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-16T09:56:23+05:30",
+ "generated_at": "2026-11-16T22:01:37+05:30",
  "as_of": "2026-11-16",
  "trained": {
   "week": "2026-11-16",
@@ -13,34 +13,34 @@
  "next_training": "2026-11-23",
  "blend_weights": {
   "simple": 0.0,
-  "logistic": 0.4745,
-  "trees": 0.4793
+  "logistic": 0.4806,
+  "trees": 0.4792
  },
  "window_sessions": 250,
  "sources": {
   "simple": {
    "n": 12500,
-   "hit": 0.5542,
-   "brier": 0.24786,
-   "skill_vs_coin": 0.0086
+   "hit": 0.5546,
+   "brier": 0.24781,
+   "skill_vs_coin": 0.0088
   },
   "logistic": {
    "n": 12500,
-   "hit": 0.5532,
-   "brier": 0.24679,
-   "skill_vs_coin": 0.0128
+   "hit": 0.5539,
+   "brier": 0.24675,
+   "skill_vs_coin": 0.013
   },
   "trees": {
    "n": 12500,
-   "hit": 0.5313,
-   "brier": 0.24686,
-   "skill_vs_coin": 0.0126
+   "hit": 0.5318,
+   "brier": 0.24682,
+   "skill_vs_coin": 0.0127
   },
   "blend": {
    "n": 12500,
-   "hit": 0.5453,
-   "brier": 0.24635,
-   "skill_vs_coin": 0.0146
+   "hit": 0.5458,
+   "brier": 0.24631,
+   "skill_vs_coin": 0.0148
   }
  },
  "top_weights": [
@@ -102,21 +102,21 @@
    "trained_to": "2026-11-13",
    "weights": {
     "simple": 0.0,
-    "logistic": 0.4745,
-    "trees": 0.4793
+    "logistic": 0.4806,
+    "trees": 0.4792
    },
    "window_sessions": 250,
    "hit": {
-    "simple": 0.5542,
-    "logistic": 0.5532,
-    "trees": 0.5313,
-    "blend": 0.5453
+    "simple": 0.5546,
+    "logistic": 0.5539,
+    "trees": 0.5318,
+    "blend": 0.5458
    },
    "skill": {
-    "simple": 0.0086,
-    "logistic": 0.0128,
-    "trees": 0.0126,
-    "blend": 0.0146
+    "simple": 0.0088,
+    "logistic": 0.013,
+    "trees": 0.0127,
+    "blend": 0.0148
    }
   }
  ],

@@ -137,6 +137,23 @@ git push
 
 The clock and every date on the site are India time (IST), even though your computer is on US Central time.
 
+### Daily routine while you run it on your own computer
+
+You are in US Central time. India is 11 hours 30 minutes ahead of US Central in winter
+(10 hours 30 minutes ahead from March to early November, when the US is on daylight time).
+Times below are for winter. Run each command in a terminal opened in `D:\Projects\ind_stocks`.
+
+| When (US Central) | When (India) | Run this | What it does |
+|---|---|---|---|
+| **6:30 PM to 9:15 PM**, Sunday to Thursday evening | 06:00 to 08:45 the next morning, before the open | `python -m pipeline.run_premarket` | Writes down the plan for the coming Indian session. **This is the plan that gets scored.** After 9:15 PM Central it refuses, because the plan would no longer be written before the open |
+| **After 6:30 AM**, Monday to Friday | after 18:00, once the market has closed | `python -m pipeline.run_eod` | Fetches the official closing prices, scores the morning's plan and drafts the next one |
+| Sunday, any time | Sunday | `python -m pipeline.run_weekly` | Retrains the models (about 8 minutes) |
+
+- If you miss the evening window, the plan for that session is simply "not issued". Nothing breaks.
+- Running `run_eod` while the Indian market is still open (10:45 PM to 5:00 AM Central) is now safe:
+  it ignores the half-finished day and waits for the close.
+- Once the GitHub setup in section A is done, GitHub does all of this for you and you can stop.
+
 To refresh the data by hand on your computer (not needed once GitHub is running it):
 ```
 python -m pipeline.run_eod --always      (evening job)
@@ -149,6 +166,12 @@ python -m pipeline.run_weekly            (Sunday training and backtest; takes ab
 ## D. Good to know
 
 - **Name.** I called the site "Dalal Desk" (after Dalal Street). To rename it, tell me the name you want.
+- **Help for newcomers.** First-time visitors see a "New here?" card on the Today page; "Got it" hides it
+  for good on that browser. The round **?** button at the bottom right opens a plain-English glossary at any time.
+- **Checking accuracy.** Open **Accuracy check** (third tab). Pick a stock, or "All 50 stocks together",
+  and a period. Blue bars are what the tool predicted the morning before; dots are the real closing prices
+  (green landed inside, red landed outside). Shaded days are live; the rest are a backtest replay. The page
+  holds back its verdict until there are at least 10 live days. It updates every time you run `run_eod`.
 - **Make a plan page.** The second tab asks for an amount, a target for the day and a risk tolerance, then
   shows which of the published levels fit, or why none do and what would. Its figures are estimates from
   past behaviour, not promises. It needs `data/planner.json`, which every scheduled job now writes.

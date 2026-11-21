@@ -1,11 +1,11 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-16T09:56:23+05:30",
+ "generated_at": "2026-11-16T22:01:37+05:30",
  "last_eod_date": "2026-11-16",
  "plan_for_date": "2026-11-17",
  "plan_status": "draft",
- "result_date": null,
+ "result_date": "2026-11-16",
  "today_ist": "2026-11-16",
  "today_is_session": true,
  "upcoming_sessions": [
@@ -18,10 +18,10 @@
  "sources": {
   "nse": {
    "counts": {
-    "saved": 0,
+    "saved": 1,
     "exists": 0,
     "closed": 0,
-    "pending": 1,
+    "pending": 0,
     "error": 0
    },
    "recovered": []
@@ -29,6 +29,12 @@
   "yahoo": {
    "ok": 60,
    "failed": []
+  },
+  "bars5m": {
+   "saved": [
+    "2026-11-16"
+   ],
+   "failed_symbols": []
   }
  },
  "session": {

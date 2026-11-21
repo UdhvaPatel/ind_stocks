@@ -239,6 +239,124 @@ export function lineChart(el, lines, { unit = (v) => fmt.signed(v, 0) + " R", ze
   });
 }
 
+// --------------------------------------------------------- forecast vs real
+// rows: from comparelogic.stockSeries. unit "inr": rupees (range bars from that day's previous
+// close, real close joined by a line); "pct": % change from the previous close.
+export function compareChart(el, rows, { unit = "inr", onPick = null } = {}) {
+  const api = { highlight() {} };
+  mount(el, (W) => {
+    if (!rows.length) { el.append(h("p", { class: "muted small", text: "Nothing to plot for this choice." })); return; }
+    const inr = unit === "inr", H = W < 520 ? 300 : 360, m = { l: inr ? 64 : 48, r: 14, t: 22, b: 26 };
+    const lo_ = (r) => (inr ? r.lo : r.p05), hi_ = (r) => (inr ? r.hi : r.p95), mid_ = (r) => (inr ? r.mid : r.p50), act_ = (r) => (inr ? r.close : r.ret);
+    let lo = Math.min(...rows.map((r) => Math.min(lo_(r), act_(r)))), hi = Math.max(...rows.map((r) => Math.max(hi_(r), act_(r))));
+    if (!inr) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+    const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+    const n = rows.length, step = (W - m.l - m.r) / n, bw = Math.max(2, Math.min(14, step * 0.58));
+    const X = (i) => m.l + step * (i + 0.5), Y = scale(lo, hi, H - m.b, m.t);
+    const label = (v) => (inr ? fmt.px(v) : fmt.pct(v, 1));
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img",
+      "aria-label": `Predicted 90% range and real close for ${n} sessions` });
+
+    rows.forEach((r, i) => { if (r.track === "live") svg.append(s("rect", { class: "live-col", x: X(i) - step / 2, width: step, y: m.t - 14, height: H - m.b - m.t + 14 })); });
+    const firstLive = rows.findIndex((r) => r.track === "live");
+    if (firstLive >= 0) svg.append(s("text", { class: "live-tag", x: X(firstLive), y: m.t - 4, "text-anchor": firstLive > n - 3 ? "end" : "middle", text: "LIVE" }));
+    for (const t of niceTicks(lo, hi, 5))
+      svg.append(s("line", { class: !inr && t === 0 ? "axis" : "grid", x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t) }),
+                 s("text", { x: m.l - 7, y: Y(t) + 3.5, "text-anchor": "end", text: label(t) }));
+    const every = Math.max(1, Math.round(n / (W < 520 ? 3 : 7)));
+    rows.forEach((r, i) => { if ((n - 1 - i) % every === 0) svg.append(s("text", { x: X(i), y: H - 8, "text-anchor": "middle", text: fmtShort(r.date) })); });
+
+    const bars = s("g", { class: "cmp-bars" });
+    rows.forEach((r, i) => {
+      const y1 = Y(hi_(r)), y0 = Y(lo_(r));
+      bars.append(s("rect", { class: "cmp-band" + (r.inside ? "" : " miss"), x: X(i) - bw / 2, width: bw, y: y1, height: Math.max(2, y0 - y1), rx: Math.min(3, bw / 2),
+                              style: `animation-delay:${Math.min(i * 12, 600)}ms` }),
+                  s("line", { class: "cmp-mid", x1: X(i) - bw / 2, x2: X(i) + bw / 2, y1: Y(mid_(r)), y2: Y(mid_(r)) }));
+    });
+    svg.append(bars);
+    if (inr) {
+      const p = s("path", { class: "line cmp-real draw", d: pathOf(rows.map((r, i) => [X(i), Y(r.close)])) });
+      svg.append(p);
+      requestAnimationFrame(() => { try { p.style.setProperty("--len", p.getTotalLength()); } catch (e) { p.classList.remove("draw"); } });
+    }
+    const dots = rows.map((r, i) => {
+      const d = s("circle", { class: "cmp-dot " + (r.inside ? "in" : "out"), cx: X(i), cy: Y(act_(r)), r: r.inside ? 3.4 : 4.6, style: `animation-delay:${300 + Math.min(i * 12, 600)}ms` });
+      svg.append(d);
+      return d;
+    });
+
+    const hair = s("line", { class: "xhair", y1: m.t, y2: H - m.b, visibility: "hidden" });
+    const hit = s("rect", { x: m.l, y: m.t - 14, width: W - m.l - m.r, height: H - m.b - m.t + 14, fill: "transparent" });
+    let hot = -1;
+    const focus = (i, e) => {
+      if (hot >= 0 && dots[hot]) dots[hot].classList.remove("hot");
+      hot = i;
+      if (i < 0) { hair.setAttribute("visibility", "hidden"); hideTip(); return; }
+      const r = rows[i];
+      dots[i].classList.add("hot");
+      hair.setAttribute("x1", X(i)); hair.setAttribute("x2", X(i)); hair.setAttribute("visibility", "visible");
+      const money = (pct) => fmt.px(r.prev * (1 + pct / 100));
+      if (e) showTip(e, tipHead(`${fmtDate(r.date, true)} · ${r.track === "live" ? "live" : "backtest"}`),
+        tipRow("Predicted range", inr ? `${money(r.p05)} to ${money(r.p95)}` : `${fmt.pct(r.p05, 1)} to ${fmt.pct(r.p95, 1)}`),
+        tipRow("Most likely", inr ? money(r.p50) : fmt.pct(r.p50, 1)),
+        tipRow("Real close", inr ? `${fmt.px(r.close)} (${fmt.pct(r.ret)})` : fmt.pct(r.ret)),
+        tipRow("Inside the range", r.inside ? "yes ✓" : `no ✗ (${fmt.pct(r.outsideBy, 1)} beyond)`),
+        r.pUp != null ? tipRow("Chance up it gave", fmt.prob(r.pUp)) : null,
+        r.right != null ? tipRow("Up/down lean", r.right ? "right ✓" : "wrong ✗") : null);
+    };
+    hit.addEventListener("pointermove", (e) => {
+      const box = svg.getBoundingClientRect();
+      focus(Math.max(0, Math.min(n - 1, Math.floor((e.clientX - box.left - m.l) / step))), e);
+    });
+    hit.addEventListener("pointerleave", () => focus(-1));
+    if (onPick) hit.addEventListener("click", () => { if (hot >= 0) onPick(rows[hot]); });
+    svg.append(hair, hit);
+    el.append(svg);
+    api.highlight = (i) => {
+      if (i < 0) { focus(-1); return; }
+      const box = svg.getBoundingClientRect();
+      focus(i, { clientX: box.left + X(i), clientY: box.top + Y(act_(rows[i])) });
+    };
+  });
+  return api;
+}
+
+// series: comparelogic.marketSeries. Bars = share of the 50 closes inside their range (aim 90%);
+// line = share whose up/down lean was right (a coin flip is 50%).
+export function scoreChart(el, series) {
+  mount(el, (W) => {
+    if (!series.length) { el.append(h("p", { class: "muted small", text: "Nothing to plot yet." })); return; }
+    const H = 280, m = { l: 40, r: 64, t: 18, b: 26 }, n = series.length;
+    const step = (W - m.l - m.r) / n, bw = Math.max(2, Math.min(12, step * 0.55));
+    const X = (i) => m.l + step * (i + 0.5), Y = scale(0, 1, H - m.b, m.t);
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Daily accuracy across all stocks" });
+    series.forEach((d, i) => { if (d.track === "live") svg.append(s("rect", { class: "live-col", x: X(i) - step / 2, width: step, y: m.t - 10, height: H - m.b - m.t + 10 })); });
+    for (const t of [0, 0.25, 0.5, 0.75, 1])
+      svg.append(s("line", { class: "grid", x1: m.l, x2: W - m.r, y1: Y(t), y2: Y(t) }), s("text", { x: m.l - 6, y: Y(t) + 3.5, "text-anchor": "end", text: fmt.prob(t) }));
+    const every = Math.max(1, Math.round(n / (W < 520 ? 3 : 7)));
+    series.forEach((d, i) => { if ((n - 1 - i) % every === 0) svg.append(s("text", { x: X(i), y: H - 8, "text-anchor": "middle", text: fmtShort(d.date) })); });
+    series.forEach((d, i) => svg.append(s("rect", { class: "score-bar" + (d.coverage < 0.8 ? " low" : ""), x: X(i) - bw / 2, width: bw, y: Y(d.coverage), height: Math.max(1, Y(0) - Y(d.coverage)), rx: Math.min(2.5, bw / 2), style: `animation-delay:${Math.min(i * 10, 600)}ms` })));
+    for (const [v, cls, text] of [[0.9, "ref-cov", "aim 90%"], [0.5, "ref-coin", "coin flip"]])
+      svg.append(s("line", { class: cls, x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v) }), s("text", { class: cls + "-t", x: W - m.r + 6, y: Y(v) + 3.5, text }));
+    const p = s("path", { class: "line s2 draw", d: pathOf(series.map((d, i) => [X(i), Y(d.dirHit)])) });
+    svg.append(p);
+    requestAnimationFrame(() => { try { p.style.setProperty("--len", p.getTotalLength()); } catch (e) { p.classList.remove("draw"); } });
+    series.forEach((d, i) => svg.append(s("circle", { class: "dot s2dot", cx: X(i), cy: Y(d.dirHit), r: n > 40 ? 2.4 : 3.4 })));
+    const hair = s("line", { class: "xhair", y1: m.t, y2: H - m.b, visibility: "hidden" });
+    const hit = s("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.b - m.t, fill: "transparent" });
+    hit.addEventListener("pointermove", (e) => {
+      const box = svg.getBoundingClientRect(), i = Math.max(0, Math.min(n - 1, Math.floor((e.clientX - box.left - m.l) / step))), d = series[i];
+      hair.setAttribute("x1", X(i)); hair.setAttribute("x2", X(i)); hair.setAttribute("visibility", "visible");
+      showTip(e, tipHead(`${fmtDate(d.date, true)} · ${d.track === "live" ? "live" : "backtest"}`),
+        tipRow("Closes inside the range", `${fmt.prob(d.coverage)} of ${d.n}`), tipRow("Up/down lean right", fmt.prob(d.dirHit)),
+        d.upShare != null ? tipRow("Stocks that rose", fmt.prob(d.upShare)) : null, d.avgRet != null ? tipRow("Average move", fmt.pct(d.avgRet)) : null);
+    });
+    hit.addEventListener("pointerleave", () => { hair.setAttribute("visibility", "hidden"); hideTip(); });
+    svg.append(hair, hit);
+    el.append(svg);
+  });
+}
+
 // ------------------------------------------------------------------- ring
 export function ring(value, label) {
   const r = 38, c = 2 * Math.PI * r, v = ok(value) ? Math.max(0, Math.min(100, value)) : 0;

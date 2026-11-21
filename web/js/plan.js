@@ -171,7 +171,7 @@ function planCard(p, res, hooks) {
       h("div", { class: "rr-l" }, h("span", { class: "down", text: `risk ${fmt.rs(p.lossAtStop)}` }), h("span", { class: "up", text: `best case ${fmt.rs(p.bestGain)}` }))),
     h("div", { class: "odds" },
       h("div", { class: "odds-l" }, h("span", { text: meets ? "Chance of reaching your goal" : "Chance of the best case" }), h("b", { text: chance(meets ? p.pTarget : p.pBest, meets ? p.pTargetBound : null) })),
-      h("div", { class: "mini accent" }, h("i", { vars: { "--v": Math.max(0.01, Math.min(1, (meets ? p.pTarget : p.pBest) || 0)) } }))),
+      h("div", { class: "mbar accent" }, h("i", { vars: { "--v": Math.max(0.01, Math.min(1, (meets ? p.pTarget : p.pBest) || 0)) } }))),
     h("dl", { class: "kv" },
       h("dt", { text: "Position" }), h("dd", { text: `${fmt.int(p.shares)} shares · ${fmt.rs(p.value)}` }),
       h("dt", { text: "Holding period" }), h("dd", { text: gap ? `09:15 to ${p.exitBy} IST at most` : `same session, out by ${p.exitBy} IST` }),

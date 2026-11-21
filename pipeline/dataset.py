@@ -50,9 +50,20 @@ class Dataset:
         )
 
 
+def finished_only(df: pd.DataFrame | None) -> pd.DataFrame | None:
+    """Drop vendor bars for an Indian session that is still running (or dated in the future).
+
+    During market hours Yahoo already lists today's bar, built from the trades so far.
+    Treating it as a closed session would plan and score against a half-made day.
+    """
+    if df is None or not len(df):
+        return df
+    return df[df.index <= config.last_finished_session_day()]
+
+
 def _index_frame(key: str, nse_name: str | None, idx_all: pd.DataFrame) -> pd.DataFrame | None:
     """Yahoo index history, with official NSE closes overriding where available."""
-    ydf = store.load_yahoo_daily(key)
+    ydf = finished_only(store.load_yahoo_daily(key))
     cols = ["open", "high", "low", "close"]
     if nse_name and len(idx_all):
         off = idx_all[idx_all["index"] == nse_name].drop_duplicates("date", keep="last")
@@ -74,7 +85,7 @@ def load_dataset(symbols: list[str]) -> Dataset:
     frames, issues = {}, {}
     for sym in symbols:
         frame, iss = clean.build_symbol_frame(
-            store.load_yahoo_daily(sym), store.load_events(sym), by_symbol.get(sym))
+            finished_only(store.load_yahoo_daily(sym)), store.load_events(sym), by_symbol.get(sym))
         if len(frame):
             frames[sym] = frame
         if iss:

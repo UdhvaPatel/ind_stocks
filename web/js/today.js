@@ -100,14 +100,15 @@ function plainCard(d) {
         h("div", { class: "fv " + (f.key === "close" ? dir(f.dir) : ""), text: factValue(f.value) }),
         f.note ? h("div", { class: "fn", text: factValue(f.note) }) : null,
         f.key === "up" ? h("div", { class: "meter go split" }, h("i", { vars: { "--v": f.value.x } })) : null,
-        f.key === "health" ? h("div", { class: "meter go" }, h("i", { vars: { "--v": f.value.x / 100 } })) : null)))));
+        f.key === "health" ? h("div", { class: "meter go" }, h("i", { vars: { "--v": f.value.x / 100 } })) : null))),
+      h("a", { class: "linkish", href: `#/accuracy?s=${encodeURIComponent(d.symbol)}`, text: `How accurate have past predictions for ${d.symbol} been? See them against the real prices →` })));
 }
 
 // ------------------------------------------- the three rules side by side
 function rulesCard(d, state, hooks) {
   const rows = ruleTable(d);
   if (!rows.length) return null;
-  const bar = (v, cls) => h("div", { class: "mini " + (cls || "") }, h("i", { vars: { "--v": ok(v) ? Math.max(0, Math.min(1, v)) : 0 } }));
+  const bar = (v, cls) => h("div", { class: "mbar " + (cls || "") }, h("i", { vars: { "--v": ok(v) ? Math.max(0, Math.min(1, v)) : 0 } }));
   return h("section", { class: "card reveal" },
     h("div", { class: "card-h" }, h("h3", { text: "The three rules, side by side" }), h("span", { class: "hint", text: `Their past record on ${d.symbol}, after costs` })),
     h("div", { class: "card-b scroll-x" },

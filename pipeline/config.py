@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
 
@@ -35,3 +35,14 @@ def now_ist() -> datetime:
 
 def today_ist() -> date:
     return now_ist().date()
+
+
+# NSE trading ends at 15:30 IST; a vendor's bar for today is only a final one after this
+# (with a margin for the closing auction and the vendor's own delay).
+SESSION_FINAL = time(15, 45)
+
+
+def last_finished_session_day(now: datetime | None = None) -> date:
+    """The latest date whose Indian session can be over: today after 15:45 IST, else yesterday."""
+    now = (now or now_ist()).astimezone(IST)
+    return now.date() if now.time() >= SESSION_FINAL else now.date() - timedelta(days=1)
