@@ -246,6 +246,10 @@ def planner_file(symbol_files: list[dict], model_version: str) -> dict:
                 "hit_t2": share(won.get("t2", 0), trades),
                 "r_p05": q.get("p05"), "r_p25": q.get("p25"), "r_p50": q.get("p50"),
                 "r_p75": q.get("p75"), "r_p95": q.get("p95"),
+                "t_stat": rec.get("t_stat"), "profit_factor": rec.get("profit_factor"),
+                "longest_losing_streak": rec.get("longest_losing_streak"), "max_drawdown_r": rec.get("max_drawdown_r"),
+                "avg_win_r": rec.get("avg_win_r"), "avg_loss_r": rec.get("avg_loss_r"),
+                "p_profit_20": ((rec.get("monte_carlo") or {}).get("p_profit")),
             }
         if not rules:
             continue

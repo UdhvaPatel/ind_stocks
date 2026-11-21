@@ -59,6 +59,9 @@ def make_record(entry: dict, for_date: date, model_version: str,
         "plans": entry["plans"],
         "call": {"call": d["call"], "kind": d["kind"], "reference_kind": d["reference_kind"],
                  "label": d["label"]},
+        # Each rule's measured record (shrunk expectancy) at the time: the paper portfolio ranks by it,
+        # so its choices can be recomputed from the ledger alone.
+        "evidence": {k: {"shrunk_r": v.get("shrunk_r"), "n": v.get("n")} for k, v in (d.get("evidence") or {}).items()},
         # Where the record was made. Only records made by the scheduled GitHub workflow can be
         # checked independently (its run log and commit), so only those count as verified live.
         "source": runner_info(),

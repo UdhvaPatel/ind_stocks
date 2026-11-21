@@ -1188,6 +1188,14 @@ body[data-route="home"] .view { padding-top: 6px; }
 .jr-actions p { flex-basis: 100%; }
 @media (max-width: 860px) { .jr-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jr-row { grid-template-columns: 1fr auto; } .jr-out { grid-column: 1 / -1; } }
 
+/* Make a plan: grouped by plan type */
+.pgroups { display: grid; gap: 18px; }
+.pgroup { display: grid; gap: 10px; }
+.pgroup-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.pgroup-h b { font-size: 15px; font-weight: 800; }
+.pstats summary { cursor: pointer; font-size: 12.5px; font-weight: 650; color: var(--text-2); }
+.pstats .kv { margin-top: 8px; }
+
 /* Research table */
 .rs h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.015em; margin-bottom: 6px; }
 .rs .card-b { display: grid; gap: 14px; }

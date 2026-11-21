@@ -78,6 +78,19 @@ def check() -> list[str]:
             if not (folder / f"{name}.json").exists():
                 problems.append(f"compare/{name}.json: missing")
 
+    port_path = config.DATA_DIR / "portfolio.json"
+    if port_path.exists():
+        port = _load("portfolio.json", problems)
+        if port is not None:
+            for key in ("portfolio_version", "books", "benchmarks", "capital"):
+                if key not in port:
+                    problems.append(f"portfolio.json: no '{key}'")
+            for name, book in (port.get("books") or {}).items():
+                for d in book.get("days", []):
+                    if d.get("deployed", 0) > port.get("capital", 1e18) * 1.01:      # fills include slippage
+                        problems.append(f"portfolio.json: {name} on {d.get('date')} put more than the capital to work")
+                        break
+
     ids = set()
     for path in sorted((config.DATA_DIR / "ledger").glob("*.jsonl")):
         for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):

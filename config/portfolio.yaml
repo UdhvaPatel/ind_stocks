@@ -1,0 +1,36 @@
+# Dalal Desk paper portfolio (pipeline/portfolio.py). PRETEND MONEY ONLY.
+#
+# Every trading day the Desk "puts" Rs 1,00,000 of pretend money behind its own plans for that
+# session. The orders are written to data/portfolio/ before 09:15 IST and scored after the close
+# with the same fill rules and charges as every other plan. Results add up day by day; the capital
+# resets each morning (nothing is compounded or carried overnight).
+#
+# Changing anything here changes the strategy: bump portfolio_version, and results of different
+# versions are never added together.
+portfolio_version: "1.0.0"
+first_day: "2026-11-23"          # the first session the rules below were committed for
+
+capital: 100000                  # rupees put to work each session at most
+risk_per_trade: 500              # rupees lost if a position's stop is hit (0.5% of capital)
+max_position_pct: 0.25           # no position above 25% of capital
+max_positions: 4
+
+books:
+  desk:
+    label: "Dalal Desk portfolio"
+    note: "Only plans the tool itself calls (Weak or Stronger signal), best record first. On “Wait” days it keeps the money: ₹0."
+  practice:
+    label: "Practice book"
+    note: "The two best-recorded plans of each type every day, whatever the call. Not the Desk's call: it shows how the plans behave."
+    per_rule: 2
+
+# Pre-registered thresholds (PLAN.md 15.3).
+min_days_for_verdict: 60         # verified sessions before the page judges anything
+allocator:
+  ev_threshold_r: 0.05           # a plan is taken only if its predicted value is above +0.05 R
+  kelly_fraction: 0.25           # quarter-Kelly ...
+  max_risk_per_trade_pct: 0.5    # ... capped at 0.5% of capital per trade
+  max_risk_per_day_pct: 2.0      # and 2% for the day
+  min_training_trades: 2000      # per rule
+  shadow_days_before_promotion: 60
+  promotion_t: 2.0               # walk-forward edge over cash and over v1 must have t >= 2

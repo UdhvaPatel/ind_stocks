@@ -34,6 +34,8 @@ def main() -> None:
     if scored:
         jobs.log(f"scored {scored}")
     plan_status, for_date = jobs.issue_plan(engine, force=args.force)
+    if plan_status == "scored" and for_date == jobs.config.today_ist():
+        jobs.issue_portfolio(engine, for_date)             # paper orders, also before the open
     if plan_status == "not_issued":
         status["pipeline_status"] = "stale"
         status["message"] = (f"No plan was issued for {for_date}: the data was not up to date "

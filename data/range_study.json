@@ -1,0 +1,35 @@
+{
+ "schema": 1,
+ "model_version": "1.0.0",
+ "generated_at": "2026-11-21T11:52:40+05:30",
+ "preregistered": "2026-11-21",
+ "rule": "adopt only with walk-forward coverage 89-91%, live coverage 87-93% on at least 40 verified sessions, and a better interval score whose day-clustered 95% interval excludes zero",
+ "rows": 3050,
+ "sessions": 61,
+ "live_sessions": 0,
+ "current": {
+  "coverage": 0.8675,
+  "avg_width": 5.048,
+  "score": 7.879,
+  "coverage_20d": 0.876,
+  "width_20d": 5.49
+ },
+ "challenger": {
+  "coverage": 0.8941,
+  "avg_width": 5.789,
+  "score": 8.106,
+  "coverage_live": null
+ },
+ "score_difference": {
+  "n": 3050,
+  "days": 61,
+  "mean": 0.2267,
+  "ci": [
+   0.0509,
+   0.4004
+  ],
+  "too_early": false
+ },
+ "ready": false,
+ "decision": "keep the current range: only 0 of 40 verified live sessions so far; the challenger scores worse (interval score +0.23, 95% interval +0.05 to +0.40; above zero means worse)"
+}

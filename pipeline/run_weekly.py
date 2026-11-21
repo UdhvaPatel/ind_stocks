@@ -25,6 +25,20 @@ def main() -> None:
     jobs.log(f"backtest: {agg['scored']} predictions over {agg['days']} sessions")
     quality = jobs.quality_report(engine)
     jobs.log(f"quality: {quality['cross_check']}")
+    # The weekly allocator: walk-forward test, then fit on all history (shadow only; see allocator.py).
+    try:
+        from . import allocator, portfolio
+        shadow = sum(1 for o in portfolio.load_orders() if o["book"] == "allocator" and ledger.verified(o))
+        rep = allocator.train(engine, getattr(engine, "backtest_scores", []), shadow_sessions=shadow, log=jobs.log)
+        jobs.log(f"allocator: {rep['status']}")
+    except Exception as exc:                           # noqa: BLE001 - must never stop the weekly job
+        jobs.log(f"allocator skipped: {type(exc).__name__}: {exc}")
+    try:                                               # range challenger study (pre-registered; never switches the model itself)
+        from . import range_study
+        rs = range_study.run(engine)
+        jobs.log(f"range study: {rs['decision']}")
+    except Exception as exc:                           # noqa: BLE001
+        jobs.log(f"range study skipped: {type(exc).__name__}: {exc}")
     # The pre-registered swing research, re-run on the latest data (same rules, nothing re-tuned).
     try:                                               # research must never stop the weekly job
         found = research.combined(engine.ds.frames, cost_cfg())

@@ -164,7 +164,7 @@ jobs:
             git push -q
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^data/ledger/'; then
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^data/(ledger|portfolio)/'; then
             echo "ledger=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -174,7 +174,9 @@ jobs:
         if: steps.commit.outputs.ledger == 'true'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: "data/ledger/*.jsonl"
+          subject-path: |
+            data/ledger/*.jsonl
+            data/portfolio/*.jsonl
 
       # If an earlier deploy failed, the live site is behind the repository: deploy again.
       - name: Is the live site behind?

@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-LEDGER = "data/ledger"
+LEDGERS = ("data/ledger", "data/portfolio")          # predictions, and the paper portfolio's orders
 
 
 def git(*args: str) -> str:
@@ -33,7 +33,7 @@ def violations(old_files: dict[str, str], new_files: dict[str, str]) -> list[str
 
 
 def files_at(commit: str) -> dict[str, str]:
-    names = [n for n in git("ls-tree", "-r", "--name-only", commit, "--", LEDGER).splitlines() if n.endswith(".jsonl")]
+    names = [n for n in git("ls-tree", "-r", "--name-only", commit, "--", *LEDGERS).splitlines() if n.endswith(".jsonl")]
     return {n: git("show", f"{commit}:{n}") for n in names}
 
 
@@ -47,7 +47,7 @@ def main() -> None:
     except subprocess.CalledProcessError:
         print(f"base {base} not found; nothing to check")
         return
-    new = {str(p.as_posix()): p.read_text(encoding="utf-8") for p in Path(LEDGER).glob("*.jsonl")}
+    new = {str(p.as_posix()): p.read_text(encoding="utf-8") for d in LEDGERS for p in Path(d).glob("*.jsonl")}
     bad = violations(old, new)
     if bad:
         for b in bad:

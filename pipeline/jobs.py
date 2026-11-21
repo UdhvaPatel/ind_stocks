@@ -198,6 +198,8 @@ def publish_site(engine: Engine, plan_status: str, for_date: date, status: dict)
                         "days": [{"date": d, "track": tracks.get(d, "backtest")} for d in all_days]})
     publish.write_compare(day_root, version)
     write_track(engine, scores)
+    from . import allocator, portfolio
+    publish.write_json(config.DATA_DIR / "portfolio.json", portfolio.summary(engine, scores, allocator.load_report()))
     learning_report(engine)
 
     now = config.now_ist()
@@ -326,6 +328,7 @@ def run_backtest(engine: Engine) -> dict:
     end = engine.last_session
     start = end - timedelta(days=int(365.25 * pub["backtest_years"]))
     scores = walkforward.replay(engine, start, end, version, log=log)
+    engine.backtest_scores = scores                             # reused by the weekly allocator
     out = {
         "aggregate": score.aggregate(scores), "by_symbol": score.by_symbol(scores),
         "label": "Backtest (not live)",
@@ -370,6 +373,26 @@ def quality_report(engine: Engine) -> dict:
                               for it in items)}}
     publish.write_json(config.DATA_DIR / "quality.json", out, indent=1)
     return out
+
+
+def issue_portfolio(engine: Engine, for_date: date) -> int:
+    """Paper-portfolio orders for today's session, written before the open like the plans.
+    The weekly allocator's choices are added as a separate shadow book when it has been trained."""
+    from . import allocator, portfolio
+    if config.now_ist().time() >= MARKET_OPEN:
+        return 0
+    version = engine.mcfg["model_version"]
+    extra = {}
+    try:
+        records = [r for r in ledger.load(for_date, for_date) if r["for_date"] == for_date.isoformat() and r["model_version"] == version]
+        shadow = allocator.shadow_orders(records, portfolio.cfg())
+        if shadow is not None:
+            extra["allocator"] = shadow
+    except Exception as exc:                            # noqa: BLE001 - the shadow book must never block the main one
+        log(f"allocator shadow skipped: {type(exc).__name__}: {exc}")
+    n = portfolio.issue(for_date, version, extra)
+    log(f"portfolio: {n} order book(s) written for {for_date}")
+    return n
 
 
 def write_health(job: str, status: dict) -> dict:

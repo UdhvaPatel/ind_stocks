@@ -43,6 +43,7 @@ def replay(engine: Engine, start: date, end: date, model_version: str, log=None)
             s["setup"] = entry["setup"]
             s["claims"] = rec["claims"]
             s["plan_levels"] = rec["plans"]
+            s["evidence"] = rec.get("evidence")                 # the weekly allocator trains on it
             s["prev_close"] = entry["prev"]["close"]
             out.append(s)
         if log and len(out) and k % 100 == 0:

@@ -4,9 +4,9 @@ name: ledger-guard
 
 on:
   push:
-    paths: ["data/ledger/**"]
+    paths: ["data/ledger/**", "data/portfolio/**"]
   pull_request:
-    paths: ["data/ledger/**"]
+    paths: ["data/ledger/**", "data/portfolio/**"]
 
 permissions:
   contents: read

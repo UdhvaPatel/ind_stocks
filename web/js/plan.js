@@ -123,7 +123,24 @@ function planGrid(plans, res, hooks, title, hint) {
   return h("section", { class: "card" },
     h("div", { class: "card-h" }, h("h3", { text: title }), h("span", { class: "hint", text: hint })),
     statsRow(plans),
-    h("div", { class: "card-b pgrid" }, plans.map((p) => planCard(p, res, hooks))));
+    groupedCards(plans, res, hooks));
+}
+
+// One heading per plan type, so the variety is visible (results arrive grouped by type).
+const TYPE_TEXT = { breakout: ["Buy on a rise", "Buys only if the price climbs past a level, betting the move continues."],
+  pullback: ["Buy on a dip", "Buys only if the price falls to a level, betting it bounces."],
+  gap_reversal: ["Buy a low opening", "Buys at the open only after a gap down, betting the gap closes."] };
+function groupedCards(plans, res, hooks) {
+  const groups = [];
+  for (const p of plans) {
+    if (!groups.length || groups[groups.length - 1].kind !== p.kind) groups.push({ kind: p.kind, items: [] });
+    groups[groups.length - 1].items.push(p);
+  }
+  return h("div", { class: "card-b pgroups" }, groups.map((g) => {
+    const [title, text] = TYPE_TEXT[g.kind] || [g.kind, ""];
+    return h("div", { class: "pgroup" }, h("div", { class: "pgroup-h" }, h("b", { text: title }), h("span", { class: "muted small", text })),
+      h("div", { class: "pgrid" }, g.items.map((p) => planCard(p, res, hooks))));
+  }));
 }
 
 // Numbers across all the plans shown, so they can be compared at a glance.
@@ -183,7 +200,19 @@ function planCard(p, res, hooks) {
       h("dt", { text: "Chance it triggers at all" }), h("dd", { text: p.pTrigger == null ? "-" : fmt.prob(p.pTrigger) }),
       h("dt", { text: meets ? `Chance of ${fmt.rs(res.inputs.target)} or more` : "Chance of the best case" }),
       h("dd", { text: meets ? chance(p.pTarget, p.pTargetBound) : chance(p.pBest) }),
-      h("dt", { text: "This rule's record here" }), h("dd", { class: p.expectancyR > 0 ? "up" : p.expectancyR < 0 ? "down" : "", text: record })),
+      h("dt", { text: "This rule's record here" }), h("dd", { class: p.expectancyR > 0 ? "up" : p.expectancyR < 0 ? "down" : "", text: record }),
+      p.evRs != null ? h("dt", { text: "Expected value per session" }) : null,
+      p.evRs != null ? h("dd", { class: p.evRs > 0 ? "up" : p.evRs < 0 ? "down" : "", text: `${fmt.signedRs(p.evRs)} (chance × record × risk)` }) : null),
+    h("details", { class: "more pstats" }, h("summary", { text: "More of this rule's record" }),
+      h("dl", { class: "kv" },
+        h("dt", { text: "Average win / loss" }), h("dd", { text: p.avgWinR != null ? `${fmt.r(p.avgWinR)} / ${fmt.r(p.avgLossR)}` : "-" }),
+        h("dt", { text: "Profit factor" }), h("dd", { text: p.profitFactor != null ? fmt.num(p.profitFactor, 2) + (p.profitFactor < 1 ? " (below 1: lost money)" : "") : "-" }),
+        h("dt", { text: "Strength of evidence (t)" }), h("dd", { text: p.tStat != null ? `${fmt.signed(p.tStat, 1)} (2 or more is solid)` : "-" }),
+        h("dt", { text: "Longest losing run" }), h("dd", { text: p.losingStreak != null ? `${fmt.int(p.losingStreak)} trades in a row` : "-" }),
+        h("dt", { text: "Worst / best 1 in 20 trades" }), h("dd", { text: p.worstR != null ? `${fmt.r(p.worstR)} / ${fmt.r(p.bestR)}` : "-" }),
+        h("dt", { text: "Deepest losing stretch" }), h("dd", { text: p.maxDrawdownR != null ? fmt.r(p.maxDrawdownR, 1) : "-" }),
+        h("dt", { text: "A run of 20 trades ended ahead" }), h("dd", { text: p.pProfit20 != null ? fmt.prob(p.pProfit20) + " of the time" : "-" })),
+      h("p", { class: "muted small", text: "R is the amount risked on one trade. From the backtest on this stock, after costs." })),
     p.limitedBy === "risk" ? h("p", { class: "muted small", text: "Quantity is set by your risk limit, so part of the amount stays unused." }) : null,
     h("button", { class: "btn", type: "button", text: `Open ${p.symbol} on the Today page`, onclick: () => hooks.go("today", { s: p.symbol, k: p.kind }) }));
 }

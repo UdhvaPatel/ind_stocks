@@ -25,6 +25,10 @@ def problems(job: str, meta: dict, today: date) -> list[str]:
     if job == "premarket" and meta.get("plan_for_date") == today.isoformat():
         if not ledger.has_plan_for(today, meta.get("model_version")):
             out.append(f"no plan for today ({today}) was committed to the ledger by the last morning run")
+        else:
+            from . import portfolio
+            if not any(o["for_date"] == today.isoformat() and o["book"] == "desk" for o in portfolio.load_orders()):
+                out.append(f"the paper portfolio's orders for today ({today}) were not written before the open")
     if meta.get("pipeline_status") not in (None, "ok"):
         out.append(f"pipeline status is '{meta.get('pipeline_status')}': {meta.get('message')}")
     return out

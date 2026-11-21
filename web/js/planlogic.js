@@ -9,7 +9,7 @@ import { charges, tradePrices } from "./money.js";
 
 export const LIMITS = { minAmount: 100, maxAmount: 1e8, maxTarget: 1e9 };
 export const RULE_NAMES = { breakout: "Breakout", pullback: "Dip buy", gap_reversal: "Gap reversal" };
-export const MAX_PLANS = 8, MIN_PLANS = 4;
+export const MAX_PLANS = 9, MIN_PLANS = 4;            // up to 3 of each of the three plan types
 
 const fin = (x) => typeof x === "number" && Number.isFinite(x);
 const num = (x) => (fin(x) ? x : null);
@@ -117,6 +117,12 @@ export function sizePlan(stock, kind, rule, amount, lossBudget, costs, target = 
     expectancyR: num(rule.expectancy_r), record,
     typicalRs: fin(rule.r_p50) ? rule.r_p50 * riskRs : null,
     expectedRs: pTrigger != null && fin(rule.expectancy_r) ? pTrigger * rule.expectancy_r * riskRs : null,
+    // Expected value in rupees per session, from the shrunk record (what ranking uses).
+    evRs: pTrigger != null && fin(record) ? pTrigger * record * riskRs : null,
+    // More of the rule's measured record on this stock (backtest, after costs).
+    tStat: num(rule.t_stat), profitFactor: num(rule.profit_factor), losingStreak: num(rule.longest_losing_streak),
+    maxDrawdownR: num(rule.max_drawdown_r), avgWinR: num(rule.avg_win_r), avgLossR: num(rule.avg_loss_r),
+    pProfit20: num(rule.p_profit_20), worstR: num(rule.r_p05), bestR: num(rule.r_p95),
   };
 }
 
@@ -161,6 +167,24 @@ function onePerStock(plans, order = better) {
   return out;
 }
 
+// Variety: up to `per` plans of EACH type (breakout, dip buy, low opening), each type ranked by its
+// expected value in rupees after costs (chance it triggers x its measured record x rupees at risk),
+// the tool's own calls first. Ranking everything together by "chance of reaching the goal" made
+// dip buys win every time, because they trigger most often.
+export const PER_RULE = 3;
+const byValue = (a, b) => {
+  const ca = a.called && (a.pTrigger ?? 0) > 0, cb = b.called && (b.pTrigger ?? 0) > 0;
+  if (ca !== cb) return ca ? -1 : 1;
+  return (b.evRs ?? -Infinity) - (a.evRs ?? -Infinity) || (b.pTarget ?? 0) - (a.pTarget ?? 0) || a.symbol.localeCompare(b.symbol);
+};
+export function diverse(plans, per = PER_RULE) {
+  const groups = {};
+  for (const p of plans) (groups[p.kind] ||= []).push(p);
+  const picked = Object.values(groups).map((list) => onePerStock(list, byValue).slice(0, per)).filter((g) => g.length);
+  picked.sort((a, b) => byValue(a[0], b[0]));                  // the type with the best top plan first
+  return picked.flat();
+}
+
 // ------------------------------------------------------------ the main call
 export function makePlan(planner, costs, raw) {
   const v = validate(raw);
@@ -177,10 +201,10 @@ export function makePlan(planner, costs, raw) {
   const budget = (amount * risk) / 100;
   const sized = allPlans(planner, amount, budget, costs, target);
   const live = sized.filter((p) => p.shares > 0);
-  const meeting = onePerStock(live.filter((p) => p.bestGain >= target));
+  const meeting = live.filter((p) => p.bestGain >= target);
 
   if (meeting.length) {
-    const plans = meeting.slice(0, MAX_PLANS);
+    const plans = diverse(meeting);
     const chances = plans.map((p) => p.pTarget).filter((x) => x != null);
     return {
       ...base, status: "feasible", errors: {}, inputs: v.values, plans, reasons: [], alternatives: [],
