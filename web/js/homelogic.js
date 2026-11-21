@@ -1,21 +1,24 @@
 // Home page arithmetic: the next plan in plain money, yesterday's result, and the recent
 // record of one stock. Only reads published files (symbol file, compare.json); decides
 // nothing new. No page dependencies, so it runs under Node for tests.
-import { charges } from "./money.js";
+import { rowReader } from "./comparerow.js";
+import { tradeMoney, tradePrices } from "./money.js";
 
 const fin = (x) => typeof x === "number" && Number.isFinite(x);
 export const RULE_KEYS = ["breakout", "pullback", "gap_reversal"];
 export const RULE_TITLES = { breakout: "Buy on a rise", pullback: "Buy on a dip", gap_reversal: "Buy a low opening" };
 export const AMOUNTS = [10000, 50000, 100000];
 
+// The same three words are used on every page (see also plan.js and today.js).
 export const VERDICTS = {
-  NO_TRADE: { tone: "wait", badge: "Wait", title: "No clear chance. Waiting is the smart move.",
-    text: "None of the tested buying plans has made money on this stock after trading costs. The plan below is shown so you can learn from it, not as a suggestion to buy." },
-  NEUTRAL: { tone: "maybe", badge: "Maybe", title: "A small chance, with weak evidence.",
-    text: "One plan has a slightly positive past record here, but it could be luck. Treat it as something to watch." },
-  FAVOURABLE: { tone: "good", badge: "Good setup", title: "The strongest signal this site gives.",
-    text: "One plan has a positive past record here that is unlikely to be luck alone. It can still lose; nothing here is a promise." },
+  NO_TRADE: { tone: "wait", badge: "Wait", title: "No tested reason to act today.",
+    text: "None of the tested plans has made money on this stock after trading costs. Doing nothing is a valid choice, and the usual answer here." },
+  NEUTRAL: { tone: "maybe", badge: "Weak signal", title: "Weak signal",
+    text: "One plan has a slightly positive past record here, but it could easily be luck." },
+  FAVOURABLE: { tone: "strong", badge: "Stronger signal (still unproven)", title: "Stronger signal (still unproven)",
+    text: "One plan has a positive past record here that is unlikely to be luck alone. It can still lose money; nothing here is a promise." },
 };
+export const CALL_WORDS = { NO_TRADE: "Wait", NEUTRAL: "Weak signal", FAVOURABLE: "Stronger signal (still unproven)" };
 
 // Rupees for putting `amount` into a trade that returned `retPct` % after charges.
 export const rupees = (amount, retPct) => (fin(amount) && fin(retPct) ? (amount * retPct) / 100 : null);
@@ -29,11 +32,9 @@ export function nextPlan(d, amount, costs) {
   const card = d.plans[kind], L = card.levels;
   if (![L.entry, L.stop, L.t1].every(fin) || !(L.entry > L.stop)) return null;
   const gap = kind === "gap_reversal";
-  const sellAt = gap || !fin(L.t2) ? L.t1 : (L.t1 + L.t2) / 2;          // half at T1, half at T2
-  const shares = fin(amount) && amount > 0 ? Math.floor(amount / L.entry) : 0;
-  const buy = shares * L.entry;
-  const best = shares ? shares * (sellAt - L.entry) - charges(buy, shares * sellAt, costs).total : 0;
-  const worst = shares ? -(shares * (L.entry - L.stop) + charges(buy, shares * L.stop, costs).total) : 0;
+  const prices = tradePrices(kind, L, d.slippage, costs);                // same fill rules as the scoreboard
+  const shares = fin(amount) && amount > 0 ? Math.floor(amount / prices.fill) : 0;
+  const { best, worst, invested: buy } = tradeMoney(prices, shares, costs);
   const last = (d.last && d.last.close) || null, c = d.claims || {};
   return {
     call, verdict: VERDICTS[call] || VERDICTS.NO_TRADE, kind, ruleTitle: RULE_TITLES[kind] || kind, gap,
@@ -50,51 +51,49 @@ export function nextPlan(d, amount, costs) {
 }
 
 // ----------------------------------------------------------- past sessions
-// compare.json row -> object (see publish.compare_file for the layout).
-function rowObj(data, row) {
-  if (!Array.isArray(row) || row.length < 10) return null;
-  const [i, prev, p05, p50, p95, close, ret, pUp, right, inside, kind, status, planRet, entry, stop, rules, advice] = row;
-  if (!data.days[i] || ![prev, p05, p95, close, ret].every(fin)) return null;
-  const px = (p) => prev * (1 + p / 100);
+// compare row -> object; columns are read by name (comparerow.js).
+function rowObj(read, row) {
+  const o = read(row);
+  if (!o || !o.date || ![o.prev, o.p05, o.p95, o.close, o.ret].every(fin)) return null;
+  const px = (p) => o.prev * (1 + p / 100);
   const ruleOut = {};
-  RULE_KEYS.forEach((k, j) => {
-    const v = Array.isArray(rules) ? rules[j] : null;
+  for (const k of RULE_KEYS) {
+    const v = o.rules[k];
     ruleOut[k] = v === "n" ? { traded: false, ret: 0 } : fin(v) ? { traded: true, ret: v } : null;
-  });
-  if (kind && RULE_KEYS.includes(kind) && !ruleOut[kind]) {        // the shown plan's own result
-    const noTrade = ["not_triggered", "cancelled", "none"].includes(status);
-    ruleOut[kind] = noTrade ? { traded: false, ret: 0 } : fin(planRet) ? { traded: true, ret: planRet } : null;
+  }
+  if (o.kind && RULE_KEYS.includes(o.kind) && !ruleOut[o.kind]) {   // the shown plan's own result
+    const noTrade = ["not_triggered", "cancelled", "none"].includes(o.status);
+    ruleOut[o.kind] = noTrade ? { traded: false, ret: 0 } : fin(o.plan_ret) ? { traded: true, ret: o.plan_ret } : null;
   }
   return {
-    date: data.days[i], track: (data.track && data.track[i]) || "backtest", prev, close, ret,
-    lo: px(p05), hi: px(p95), mid: fin(p50) ? px(p50) : null, pUp: fin(pUp) ? pUp : null,
-    right: right == null ? null : !!right, inside: inside == null ? ret >= p05 && ret <= p95 : !!inside,
-    kind: kind || null, status: status || null, entry: fin(entry) ? entry : null, stop: fin(stop) ? stop : null,
-    rules: ruleOut, advice: { N: "NO_TRADE", U: "NEUTRAL", F: "FAVOURABLE" }[advice] || null,
+    date: o.date, track: o.track, prev: o.prev, close: o.close, ret: o.ret,
+    lo: px(o.p05), hi: px(o.p95), mid: fin(o.p50) ? px(o.p50) : null, pUp: fin(o.p_up) ? o.p_up : null,
+    right: o.right == null ? null : !!o.right, inside: o.inside == null ? o.ret >= o.p05 && o.ret <= o.p95 : !!o.inside,
+    rightOpen: o.right_open == null ? null : !!o.right_open,
+    kind: o.kind || null, status: o.status || null, entry: fin(o.entry) ? o.entry : null, stop: fin(o.stop) ? o.stop : null,
+    rules: ruleOut, advice: { N: "NO_TRADE", U: "NEUTRAL", F: "FAVOURABLE" }[o.advice] || null,
   };
 }
 
-// When the advice was "wait", was waiting right? Compares against what each plan would have done.
-//   saved   : every plan that bought lost money  -> waiting avoided a loss
-//   missed  : every plan that bought made money  -> waiting missed a gain
-//   mixed   : some made, some lost
-//   nothing : no plan bought anything            -> waiting cost nothing
-//   unknown : the plans' results are not recorded
+// When the advice was "wait", what did the one practice plan shown that morning do?
+// (Judging against the best or worst plan afterwards would be hindsight.)
+//   saved   : the shown plan bought and lost  -> waiting avoided that loss
+//   missed  : the shown plan bought and made money -> waiting missed that gain
+//   nothing : the shown plan never bought      -> waiting cost nothing
+//   unknown : no result recorded
 export function judgeWait(r, amount) {
   if (!r || r.advice !== "NO_TRADE") return null;
-  const known = RULE_KEYS.filter((k) => r.rules[k]).map((k) => ({ kind: k, title: RULE_TITLES[k], ...r.rules[k], money: rupees(amount, r.rules[k].ret) }));
-  if (!known.length) return { verdict: "unknown" };
-  const traded = known.filter((x) => x.traded);
-  const partial = known.length < RULE_KEYS.length;
-  if (!traded.length) return { verdict: "nothing", partial };
-  const worst = traded.reduce((a, x) => (x.money < a.money ? x : a)), best = traded.reduce((a, x) => (x.money > a.money ? x : a));
-  const verdict = best.money <= 0 ? "saved" : worst.money > 0 ? "missed" : "mixed";
-  return { verdict, worst, best, partial };
+  const res = r.kind ? r.rules[r.kind] : null;
+  if (!res) return { verdict: "unknown" };
+  const plan = { kind: r.kind, title: RULE_TITLES[r.kind] || r.kind, money: rupees(amount, res.ret) };
+  if (!res.traded) return { verdict: "nothing", plan };
+  return { verdict: plan.money < 0 ? "saved" : "missed", plan };
 }
 
 export function pastRows(data, symbol) {
   if (!data || !Array.isArray(data.days) || !data.stocks || !Array.isArray(data.stocks[symbol])) return [];
-  return data.stocks[symbol].map((r) => rowObj(data, r)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
+  const read = rowReader(data);
+  return data.stocks[symbol].map((r) => rowObj(read, r)).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 const STATUS_TEXT = {
@@ -140,9 +139,9 @@ export function record(rows, amount, n = 20) {
   const withDir = list.filter((r) => r.right != null);
   const judged = list.map((r) => judgeWait(r, amount)).filter(Boolean);
   const count = (v) => judged.filter((j) => j.verdict === v).length;
-  const waits = { days: judged.length, saved: count("saved"), missed: count("missed"), mixed: count("mixed"), nothing: count("nothing"), unknown: count("unknown"),
-    avoided: judged.filter((j) => j.verdict === "saved").reduce((a, j) => a - j.worst.money, 0),
-    forgone: judged.filter((j) => j.verdict === "missed").reduce((a, j) => a + j.best.money, 0) };
+  const waits = { days: judged.length, saved: count("saved"), missed: count("missed"), nothing: count("nothing"), unknown: count("unknown"),
+    avoided: judged.filter((j) => j.verdict === "saved").reduce((a, j) => a - j.plan.money, 0),
+    forgone: judged.filter((j) => j.verdict === "missed").reduce((a, j) => a + j.plan.money, 0) };
   return {
     waits,
     n: list.length, live: list.filter((r) => r.track === "live").length,

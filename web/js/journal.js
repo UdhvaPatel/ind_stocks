@@ -24,7 +24,7 @@ export async function renderJournal(root, ctx) {
   clear(root).append(
     h("div", { class: "page-h" }, h("div", {},
       h("h1", { text: "My paper-trading journal" }),
-      h("p", { text: "Practise without risking money. On the Home page, press “I'd follow this plan” for any stock. After that market day closes, the journal shows what would have happened, using the same official results as the rest of the site." }))),
+      h("p", { text: "Practise without risking money. On the Home page, open the practice plan for any stock and press “Practise with pretend money”. After that market day closes, the journal shows what would have happened, using the same official results as the rest of the site." }))),
     body);
   draw();
 }
@@ -34,7 +34,7 @@ function view(res, s, go, onRemove, onClear) {
     return [h("section", { class: "hx-card jr-empty" },
       h("div", { class: "jr-empty-i", "aria-hidden": "true", text: "📒" }),
       h("h3", { text: "Your journal is empty" }),
-      h("p", { text: "Pick a stock on the Home page, read its plan for the next market day, and press “I'd follow this plan”. Come back after 6 PM India time on that day to see the result. Your journal is saved only in this browser." }),
+      h("p", { text: "Pick a stock on the Home page, read its plan for the next market day, and press “Practise with pretend money”. Come back after 6 PM India time on that day to see the result. Your journal is saved only in this browser." }),
       h("button", { class: "hx-btn", type: "button", onclick: () => go("home") }, "Go to Home", h("span", { class: "hx-arrow", text: "→" })))];
   }
   const tile = (label, to, format, note, cls) => {

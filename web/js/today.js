@@ -10,9 +10,9 @@ const RULES = {
   gap_reversal: { short: "Gap reversal", name: "Gap-down reversal at the open" },
 };
 const CALLS = {
-  NO_TRADE: { text: "NO TRADE", icon: "pause" },
-  NEUTRAL: { text: "NEUTRAL", icon: "minus" },
-  FAVOURABLE: { text: "FAVOURABLE", icon: "check" },
+  NO_TRADE: { text: "WAIT", icon: "pause" },                        // same words as Home
+  NEUTRAL: { text: "WEAK SIGNAL", icon: "minus" },
+  FAVOURABLE: { text: "STRONGER SIGNAL (UNPROVEN)", icon: "check" },
 };
 const OUTCOME = {
   not_triggered: ["NOT TRIGGERED", "idle"], cancelled: ["CANCELLED", "idle"], none: ["NO PLAN", "idle"],

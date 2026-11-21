@@ -331,6 +331,7 @@ def day_summary(day: str, scores: list[dict], track: str, model_version: str) ->
             "prev_close": s.get("prev_close"), "actual": s["actual"],
             "p_up": s["dir"]["p_up"] if "dir" in s else None,
             "dir_correct": s["dir"]["correct"] if "dir" in s else None,
+            "dir_open_correct": open_correct(s["dir"]["p_up"], s["actual"]) if "dir" in s else None,
             "range": [cl["close"]["p05"], cl["close"]["p50"], cl["close"]["p95"]] if cl else None,
             "inside": s["close"]["inside"] if "close" in s else None,
             "touch": s.get("touch"),
@@ -346,10 +347,28 @@ def day_summary(day: str, scores: list[dict], track: str, model_version: str) ->
     n = len(scored)
     summary = {"stocks": len(rows), "scored": n,
                "dir_hit": r(sum(x["dir_correct"] for x in scored) / n, 3) if n else None,
+               "dir_hit_open": r(sum(bool(x["dir_open_correct"]) for x in scored) / n, 3) if n else None,
                "coverage": r(sum(x["inside"] for x in scored) / n, 3) if n else None,
                "up_share": r(sum(x["actual"]["ret_pct"] > 0 for x in scored) / n, 3) if n else None,
                "avg_ret_pct": r(float(np.mean([x["actual"]["ret_pct"] for x in scored])), 3) if n else None}
     return {**stamp(model_version), "date": day, "track": track, "summary": summary, "rows": rows}
+
+
+# compare.json layout. Readers must look columns up by name ("cols"), never by position.
+COMPARE_LAYOUT = 2
+COMPARE_COLS = ["day", "prev", "p05", "p50", "p95", "close", "ret", "p_up", "right", "inside",
+                "kind", "status", "plan_ret", "entry", "stop", "rules", "advice", "open", "right_open"]
+RULE_ORDER = ["breakout", "pullback", "gap_reversal"]
+DAILY_COLS = ["dir_hit", "coverage", "up_share", "avg_ret", "n", "dir_hit_open"]
+
+
+def open_correct(p_up, actual: dict | None) -> bool | None:
+    """Was the up/down lean right from the open to the close (the part tradeable after 09:15)?"""
+    try:
+        o, c = float(actual["open"]), float(actual["close"])
+        return (float(p_up) > 0.5) == (c > o)
+    except (TypeError, KeyError, ValueError):
+        return None
 
 
 def compare_file(day_root: Path, model_version: str) -> dict:
@@ -393,24 +412,51 @@ def compare_file(day_root: Path, model_version: str) -> dict:
             per_rule = dict(row.get("rules") or {})
             if plan.get("kind"):                       # the shown plan's full outcome has its return
                 per_rule[plan["kind"]] = {**per_rule.get(plan["kind"], {}), **oc}
+            right_open = open_correct(row.get("p_up"), act)
             rows.append((row["symbol"], vals, row.get("dir_correct"), row.get("inside"),
                          [plan.get("kind"), oc.get("status"), r(oc.get("ret_pct"), 3), r(lv.get("entry"), 2), r(lv.get("stop"), 2),
-                          [rule_ret(per_rule.get(k)) for k in ("breakout", "pullback", "gap_reversal")],
-                          {"NO_TRADE": "N", "NEUTRAL": "U", "FAVOURABLE": "F"}.get((row.get("call") or {}).get("call"))]))
+                          [rule_ret(per_rule.get(k)) for k in RULE_ORDER],
+                          {"NO_TRADE": "N", "NEUTRAL": "U", "FAVOURABLE": "F"}.get((row.get("call") or {}).get("call")),
+                          r(act.get("open"), 2), None if right_open is None else int(right_open)]))
         if not rows:
             continue
         i = len(days)
         days.append(day.get("date") or path.parent.name)
         tracks.append(day.get("track") or "backtest")
         s = day.get("summary") or {}
+        opens = [p[-1] for *_, p in rows if p[-1] is not None]
         daily.append([r(s.get("dir_hit"), 3), r(s.get("coverage"), 3), r(s.get("up_share"), 3),
-                      r(s.get("avg_ret_pct"), 3), len(rows)])
+                      r(s.get("avg_ret_pct"), 3), len(rows), r(sum(opens) / len(opens), 3) if opens else None])
         for sym, (prev, p05, p50, p95, close, ret, p_up), right, inside, plan in rows:
             stocks.setdefault(sym, []).append([
                 i, r(prev, 2), r(p05, 3), r(p50, 3), r(p95, 3), r(close, 2), r(ret, 3), r(p_up, 4),
                 None if right is None else int(bool(right)), None if inside is None else int(bool(inside)), *plan])
-    return {**stamp(model_version), "days": days, "track": tracks, "daily": daily,
+    return {**stamp(model_version), "layout": COMPARE_LAYOUT, "cols": COMPARE_COLS, "rule_order": RULE_ORDER,
+            "daily_cols": DAILY_COLS, "days": days, "track": tracks, "daily": daily,
             "stocks": dict(sorted(stocks.items()))}
+
+
+def compare_split(full: dict) -> dict[str, dict]:
+    """Small per-stock files (data/compare/SYM.json) so a page needs only the stock it shows,
+    plus data/compare/index.json with the days and the daily scores but no stock rows."""
+    head = {k: v for k, v in full.items() if k != "stocks"}
+    out = {"index": {**head, "symbols": sorted(full["stocks"])}}
+    for sym, rows in full["stocks"].items():
+        out[safe_name(sym)] = {**head, "stocks": {sym: rows}}
+    return out
+
+
+def write_compare(day_root: Path, model_version: str) -> dict:
+    full = compare_file(day_root, model_version)
+    write_json(config.DATA_DIR / "compare.json", full)
+    folder = config.DATA_DIR / "compare"
+    parts = compare_split(full)
+    for name, part in parts.items():
+        write_json(folder / f"{name}.json", part)
+    for stale in folder.glob("*.json"):                 # a stock that left the universe
+        if stale.stem not in parts:
+            stale.unlink()
+    return full
 
 
 def write_day(day: str, scores: list[dict], track: str, model_version: str) -> None:

@@ -31,7 +31,8 @@ def test_compare_file_lines_up_forecast_and_real_close(tmp_path):
         p.write_text(json.dumps({"date": date, "track": track, "summary": summary, "rows": rows}), encoding="utf-8")
 
     row = lambda sym, ret, inside: {"symbol": sym, "status": "scored", "prev_close": 100.0, "range": [-2.0, 0.1, 2.0],
-                                    "actual": {"close": 100 + ret, "ret_pct": ret}, "p_up": 0.55, "dir_correct": ret > 0, "inside": inside}
+                                    "actual": {"open": 100.5, "close": 100 + ret, "ret_pct": ret}, "p_up": 0.55,
+                                    "dir_correct": ret > 0, "inside": inside}
     day("2026-11-13", "backtest", [row("AAA", 1.0, True), {"symbol": "BBB", "status": "void", "reason": "x"}],
         {"dir_hit": 1.0, "coverage": 1.0, "up_share": 1.0, "avg_ret_pct": 1.0})
     day("2026-11-16", "live", [row("AAA", -3.0, False), {**row("BBB", 0.5, True), "range": None}],
@@ -40,10 +41,18 @@ def test_compare_file_lines_up_forecast_and_real_close(tmp_path):
     out = publish.clean(publish.compare_file(tmp_path, "1.0.0"))
     json.dumps(out, allow_nan=False)
     assert out["days"] == ["2026-11-13", "2026-11-16"] and out["track"] == ["backtest", "live"]
-    assert out["daily"][1] == [0.0, 0.0, 0.0, -3.0, 1]
+    # columns are named in the file; readers must use them, never positions
+    assert out["layout"] == publish.COMPARE_LAYOUT and out["cols"] == publish.COMPARE_COLS
+    assert out["rule_order"] == ["breakout", "pullback", "gap_reversal"] and out["daily_cols"][-1] == "dir_hit_open"
+    # day 2: leaned up (0.55) from an open of 100.5, closed 97 -> wrong from the open too
+    assert out["daily"][1] == [0.0, 0.0, 0.0, -3.0, 1, 0.0]
     none = [None, None, None, None, None, [None, None, None], None]
-    assert out["stocks"]["AAA"] == [[0, 100.0, -2.0, 0.1, 2.0, 101.0, 1.0, 0.55, 1, 1, *none],
-                                    [1, 100.0, -2.0, 0.1, 2.0, 97.0, -3.0, 0.55, 0, 0, *none]]
+    assert out["stocks"]["AAA"] == [[0, 100.0, -2.0, 0.1, 2.0, 101.0, 1.0, 0.55, 1, 1, *none, 100.5, 1],
+                                    [1, 100.0, -2.0, 0.1, 2.0, 97.0, -3.0, 0.55, 0, 0, *none, 100.5, 0]]
+    assert all(len(r) == len(publish.COMPARE_COLS) for r in out["stocks"]["AAA"])
+    parts = publish.compare_split(out)
+    assert set(parts) == {"index", "AAA"} and "stocks" not in parts["index"] and parts["index"]["symbols"] == ["AAA"]
+    assert parts["AAA"]["stocks"] == {"AAA": out["stocks"]["AAA"]} and parts["AAA"]["days"] == out["days"]
     assert "BBB" not in out["stocks"]                                    # void and rangeless rows are left out
 
     planned = {**row("CCC", 1.5, True), "call": {"call": "NEUTRAL", "kind": "breakout"}}
@@ -54,7 +63,7 @@ def test_compare_file_lines_up_forecast_and_real_close(tmp_path):
                         "gap_reversal": {"status": "not_triggered", "r": None}}
     day("2026-11-18", "live", [planned], {"dir_hit": 1.0, "coverage": 1.0, "up_share": 1.0, "avg_ret_pct": 1.5})
     out = publish.clean(publish.compare_file(tmp_path, "1.0.0"))
-    assert out["stocks"]["CCC"][0][10:] == ["breakout", "time", 0.81, 101.0, 99.0, [0.81, -2.3, "n"], "U"]
+    assert out["stocks"]["CCC"][0][10:] == ["breakout", "time", 0.81, 101.0, 99.0, [0.81, -2.3, "n"], "U", 100.5, 1]
     assert publish.compare_file(tmp_path / "missing", "1.0.0")["days"] == []
 
 

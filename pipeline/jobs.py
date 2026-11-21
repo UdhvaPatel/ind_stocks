@@ -16,6 +16,7 @@ from .engine import CALIB_WINDOW, Engine
 from .http import FetchError, Http
 
 ISSUE_CUTOFF = time(8, 45)          # IST: after this no new plan is issued for today
+MARKET_OPEN = time(9, 15)           # IST: not even a forced run may issue a plan after this
 
 
 def log(msg: str) -> None:
@@ -90,7 +91,9 @@ def score_pending(engine: Engine, replay_fn=None) -> list[str]:
             void = None
             st = engine.states.get(sym)
             as_of = date.fromisoformat(rec["as_of"])
-            if row is None:
+            if not ledger.made_before_open(rec):
+                void = "written after the market opened, so it cannot count as a prediction"
+            elif row is None:
                 void = "the stock did not trade in this session"
             elif st is not None and as_of in st.pos and d in st.pos:
                 f0, f1 = st.df["factor"].iloc[st.pos[as_of]], st.df["factor"].iloc[st.pos[d]]
@@ -108,14 +111,22 @@ def score_pending(engine: Engine, replay_fn=None) -> list[str]:
         s["plan_levels"] = rec["plans"]
         s["prev_close"] = rec["inputs"]["prev"]["close"]
         s["made_at"] = rec["made_at"]
+        s["runner"] = (rec.get("source") or {}).get("runner", "local")
+        s["verified"] = ledger.verified(rec)
         scores[rec["id"]] = s
         changed.add(rec["for_date"])
     if changed:
         save_scores(scores)
         for day in changed:
-            publish.write_day(day, [s for s in scores.values() if s["for_date"] == day],
-                              "live", engine.mcfg["model_version"])
+            day_scores = [s for s in scores.values() if s["for_date"] == day]
+            publish.write_day(day, day_scores, day_track(day_scores), engine.mcfg["model_version"])
     return sorted(changed)
+
+
+def day_track(day_scores: list[dict]) -> str:
+    """'live' only when the day's plans were made by the scheduled workflow before the open;
+    plans made elsewhere (for example on a laptop) are 'unverified': nobody can check when."""
+    return "live" if any(s.get("verified") for s in day_scores) else "unverified"
 
 
 # ---------------------------------------------------------------- publishing
@@ -136,6 +147,9 @@ def issue_plan(engine: Engine, force: bool = False) -> tuple[str, date]:
     if for_date < now.date():
         return "not_issued", for_date                      # data is stale: the session already passed
     if now.time() > ISSUE_CUTOFF and not force:
+        return "not_issued", for_date
+    if now.time() >= MARKET_OPEN:                          # never, not even forced: it would see the open
+        log("refusing to issue a plan after 09:15 IST: the session has started")
         return "not_issued", for_date
     vix = float(engine.ds.vix.iloc[-1]) if len(engine.ds.vix) else None
     made = datetime.now(timezone.utc)
@@ -161,13 +175,24 @@ def publish_site(engine: Engine, plan_status: str, for_date: date, status: dict)
     publish.write_json(config.DATA_DIR / "market.json", publish.market_file(engine, book, as_of))
 
     scores = load_scores()
-    live_days = sorted({s["for_date"] for s in scores.values()})
+    by_day: dict[str, list[dict]] = {}
+    for s in scores.values():
+        by_day.setdefault(s["for_date"], []).append(s)
     day_root = config.DATA_DIR / "days"
+    tracks = {d: day_track(v) for d, v in by_day.items()}
+    for d, v in by_day.items():                         # keep each scored day page's label in step with the rule
+        page = day_root / d / "summary.json"
+        try:
+            current = json.loads(page.read_text(encoding="utf-8")).get("track") if page.exists() else None
+        except ValueError:
+            current = None
+        if current != tracks[d]:
+            publish.write_day(d, v, tracks[d], version)
     all_days = sorted(p.name for p in day_root.iterdir() if p.is_dir()) if day_root.exists() else []
     publish.write_json(day_root / "index.json",
                        {**publish.stamp(version),
-                        "days": [{"date": d, "track": "live" if d in live_days else "backtest"} for d in all_days]})
-    publish.write_json(config.DATA_DIR / "compare.json", publish.compare_file(day_root, version))
+                        "days": [{"date": d, "track": tracks.get(d, "backtest")} for d in all_days]})
+    publish.write_compare(day_root, version)
     write_track(engine, scores)
     learning_report(engine)
 
@@ -200,14 +225,20 @@ def publish_site(engine: Engine, plan_status: str, for_date: date, status: dict)
 
 def write_track(engine: Engine, scores: dict[str, dict]) -> None:
     version = engine.mcfg["model_version"]
-    live = [s for s in scores.values() if s["model_version"] == version]
+    mine = [s for s in scores.values() if s["model_version"] == version]
+    live = [s for s in mine if s.get("verified")]
+    unverified = [s for s in mine if not s.get("verified")]
     backtest_path = config.DATA_DIR / "backtest.json"
     backtest = json.loads(backtest_path.read_text(encoding="utf-8")) if backtest_path.exists() else None
     publish.write_json(config.DATA_DIR / "track.json", {
         **publish.stamp(version),
         "live": {"aggregate": score.aggregate(live), "by_symbol": score.by_symbol(live),
                  "label": "Live (out of sample)",
-                 "note": "Real plans committed before the open, scored against official NSE data."},
+                 "note": "Plans written by the scheduled GitHub job before 09:15 IST and committed publicly, "
+                         "scored against official NSE data."},
+        "unverified": {"records": len(unverified), "days": sorted({s["for_date"] for s in unverified}),
+                       "note": "Plans made outside the scheduled job (for example on a laptop) or after the open. "
+                               "Their timing cannot be checked, so they are scored but kept out of the live record."},
         "backtest": backtest,
         "min_n": score.MIN_N,
     })

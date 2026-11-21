@@ -40,7 +40,8 @@ def test_breakout_time_exit_at_1515():
 def test_five_minute_path_settles_stop_versus_target_order():
     # Daily bar would show both the target and the stop inside one session.
     target_first = run("breakout", BREAKOUT, {0: 100.0, 5: 102.0, 10: 105.5, 30: 98.5})
-    assert target_first["status"] == "t2" and target_first["exit"] == pytest.approx(105.2)
+    # Half at the first target (103.2) and the rest at the second (105.2), as the plan card says.
+    assert target_first["status"] == "t2" and target_first["exit"] == pytest.approx(104.2)
     stop_first = run("breakout", BREAKOUT, {0: 100.0, 5: 102.0, 10: 98.5, 30: 105.5})
     assert stop_first["status"] == "stopped" and stop_first["exit"] == pytest.approx(99.2)
     assert stop_first["r_gross"] == pytest.approx(-1.0)

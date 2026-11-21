@@ -115,7 +115,7 @@ def replay_plan(kind: str, lv: dict, bars: pd.DataFrame, slip: float,
         if out is None:
             res["status"] = "none"
             return res
-        final = "t1" if half_out and status in ("time", "stopped") else status
+        final = "t1" if half_out and status in ("time", "stopped") else status       # "t2": both targets taken
         res.update({"status": final, "fill": round(fill, 2), "exit": round(exit_, 2),
                     "exit_time": when.strftime("%H:%M"), **out})
         return res
@@ -154,12 +154,12 @@ def replay_plan(kind: str, lv: dict, bars: pd.DataFrame, slip: float,
             if h >= t1:
                 return close_out(t1, ts, "t2")
             continue
-        if h >= t2:
-            return close_out(t2, ts, "t2")
-        if not half_out and h >= t1:
+        if not half_out and h >= t1:                                 # half at the first target, on the way up
             half_out = True
             realised += 0.5 * t1
             weight_left = 0.5
+        if h >= t2:
+            return close_out(t2, ts, "t2")
 
     if fill is None:
         return res

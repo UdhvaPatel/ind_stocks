@@ -113,8 +113,10 @@ def simulate(df: pd.DataFrame, lv: pd.DataFrame, kind: str, slip, cost_cfg: dict
         ambiguous = triggered & (l <= stop)
 
     time_exit = c * (1 - slip)
+    # Half the position is sold at the first target and the rest at the second, as the plan
+    # card says. (For the gap-down rule both targets are the same price.)
     exit_ = np.where(stopped, stop * (1 - slip_stop),
-             np.where(hit2, t2,
+             np.where(hit2, 0.5 * t1 + 0.5 * t2,
               np.where(hit1, 0.5 * t1 + 0.5 * time_exit, time_exit)))
 
     status = np.full(n, "none", dtype=object)
@@ -242,7 +244,7 @@ def resolve_one(kind: str, lv: dict, bar: dict, slip: float, cost_cfg: dict | No
     if stopped:
         status, exit_ = "stopped", stop * (1 - slip_stop)
     elif hit2:
-        status, exit_ = "t2", t2
+        status, exit_ = "t2", 0.5 * t1 + 0.5 * t2           # half at each target, as the plan card says
     elif hit1:
         status, exit_ = "t1", 0.5 * t1 + 0.5 * time_exit
     else:

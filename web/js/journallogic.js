@@ -2,6 +2,8 @@
 // published results (compare.json). Stored in this browser only; nothing is sent anywhere.
 // Pure functions except load/save, which take a storage object so tests can pass their own.
 
+import { rowReader } from "./comparerow.js";
+
 const KEY = "dd-journal";
 const fin = (x) => typeof x === "number" && Number.isFinite(x);
 export const RULE_INDEX = { breakout: 0, pullback: 1, gap_reversal: 2 };
@@ -40,19 +42,19 @@ export const has = (list, e) => list.some((x) => x.id === entryId(e));
 export function resolve(list, compare) {
   const days = (compare && compare.days) || [];
   const last = days.length ? days[days.length - 1] : null;
+  const read = rowReader(compare);
   const index = {};
   for (const [sym, rows] of Object.entries((compare && compare.stocks) || {})) {
-    for (const row of rows) if (Array.isArray(row) && days[row[0]]) index[`${days[row[0]]}|${sym}`] = row;
+    for (const raw of rows) { const o = read(raw); if (o && o.date) index[`${o.date}|${sym}`] = o; }
   }
   return list.map((e) => {
     const row = index[`${e.forDate}|${e.symbol}`];
     if (!row) return { ...e, status: !last || e.forDate > last ? "pending" : "no_data", money: null };
-    const rules = Array.isArray(row[15]) ? row[15] : [];
-    let v = rules[RULE_INDEX[e.kind]];
-    if (v == null && row[10] === e.kind) {                         // the plan shown that day carries its own result
-      v = ["not_triggered", "cancelled", "none"].includes(row[11]) ? "n" : row[12];
+    let v = row.rules[e.kind];
+    if (v == null && row.kind === e.kind) {                         // the plan shown that day carries its own result
+      v = ["not_triggered", "cancelled", "none"].includes(row.status) ? "n" : row.plan_ret;
     }
-    const close = fin(row[5]) ? row[5] : null;
+    const close = fin(row.close) ? row.close : null;
     if (v === "n") return { ...e, status: "no_trade", money: 0, close };
     if (!fin(v)) return { ...e, status: "unknown", money: null, close };
     const money = (e.amount * v) / 100;

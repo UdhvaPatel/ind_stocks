@@ -65,7 +65,9 @@ def resolve(record: dict, bar: dict | None, void_reason: str | None = None,
         p, base = cl["dir"]["p_up"], cl["dir"]["base_p_up"]
         out["dir"] = {"up": up, "p_up": p, "brier": round((p - up) ** 2, 5),
                       "brier_base": round((base - up) ** 2, 5),
-                      "correct": (p > 0.5) == up}
+                      "correct": (p > 0.5) == up,
+                      # The same lean judged from the open: the part a trader could still use after 09:15.
+                      "up_open": c > o, "correct_open": (p > 0.5) == (c > o)}
         b = cl["baseline_close"]
         out["close"] = {"inside": cl["close"]["p05"] <= ret <= cl["close"]["p95"],
                         "width": round(cl["close"]["p95"] - cl["close"]["p05"], 3),
@@ -165,8 +167,14 @@ def aggregate(scores: list[dict]) -> dict:
         ups = sum(s["dir"]["up"] for s in with_claims)
         brier = float(np.mean([s["dir"]["brier"] for s in with_claims]))
         brier_base = float(np.mean([s["dir"]["brier_base"] for s in with_claims]))
+        has_open = [s for s in with_claims if "correct_open" in s["dir"]]
+        days_open = [s["for_date"] for s in has_open]
         out["direction"] = {
             "hit": rate(sum(s["dir"]["correct"] for s in with_claims), n),
+            # Stocks on one day share the overnight signal, so intervals are computed by day.
+            "hit_days": clustered_mean([float(s["dir"]["correct"]) for s in with_claims], days),
+            "hit_open": clustered_mean([float(s["dir"]["correct_open"]) for s in has_open], days_open),
+            "always_up_open_hit": round(sum(s["dir"]["up_open"] for s in has_open) / len(has_open), 4) if has_open else None,
             "up_share": rate(ups, n),
             "always_up_hit": round(ups / n, 4),
             "brier": round(brier, 5), "brier_base": round(brier_base, 5),

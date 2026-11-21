@@ -2,6 +2,8 @@
 // Only counts and averages what compare.json already holds. No page dependencies,
 // so it runs under Node for tests.
 
+import { dailyReader, rowReader } from "./comparerow.js";
+
 const fin = (x) => typeof x === "number" && Number.isFinite(x);
 const mean = (xs) => (xs.length ? xs.reduce((a, v) => a + v, 0) / xs.length : null);
 export const PERIODS = { 20: "Last 20 days", 60: "Last 60 days", all: "Everything" };
@@ -11,16 +13,19 @@ export const MIN_DAYS = 10;          // separate sessions needed before the page
 export function stockSeries(data, symbol, period = "all") {
   if (!data || !Array.isArray(data.days) || !data.stocks || !data.stocks[symbol]) return [];
   const first = period === "all" ? 0 : Math.max(0, data.days.length - Number(period));
+  const read = rowReader(data);
   const out = [];
-  for (const row of data.stocks[symbol]) {
-    if (!Array.isArray(row) || row.length < 10) continue;
-    const [i, prev, p05, p50, p95, close, ret, pUp, right, inside] = row;
-    if (i < first || !data.days[i] || ![prev, p05, p50, p95, close, ret].every(fin) || !(prev > 0)) continue;
+  for (const raw of data.stocks[symbol]) {
+    const o = read(raw);
+    if (!o) continue;
+    const { day: i, prev, p05, p50, p95, close, ret, p_up: pUp, right, inside } = o;
+    if (i < first || !o.date || ![prev, p05, p50, p95, close, ret].every(fin) || !(prev > 0)) continue;
     const px = (p) => prev * (1 + p / 100);
     out.push({
-      date: data.days[i], track: (data.track && data.track[i]) || "backtest", prev, p05, p50, p95, close, ret,
+      date: o.date, track: o.track, prev, p05, p50, p95, close, ret,
       lo: px(p05), mid: px(p50), hi: px(p95), pUp: fin(pUp) ? pUp : null,
       right: right == null ? null : !!right, inside: inside == null ? ret >= p05 && ret <= p95 : !!inside,
+      rightOpen: o.right_open == null ? null : !!o.right_open,
       missPct: ret - p50, missRs: close - px(p50),
       // How far outside the range the close landed (0 when inside), in % of the previous close.
       outsideBy: ret > p95 ? ret - p95 : ret < p05 ? ret - p05 : 0,
@@ -33,13 +38,14 @@ export function stockSeries(data, symbol, period = "all") {
 export function marketSeries(data, period = "all") {
   if (!data || !Array.isArray(data.days) || !Array.isArray(data.daily)) return [];
   const first = period === "all" ? 0 : Math.max(0, data.days.length - Number(period));
+  const read = dailyReader(data);
   const out = [];
   data.days.forEach((date, i) => {
-    const d = data.daily[i];
-    if (i < first || !Array.isArray(d)) return;
-    const [dirHit, coverage, upShare, avgRet, n] = d;
-    if (!fin(dirHit) || !fin(coverage)) return;
-    out.push({ date, track: (data.track && data.track[i]) || "backtest", dirHit, coverage, upShare: fin(upShare) ? upShare : null, avgRet: fin(avgRet) ? avgRet : null, n: n || 0 });
+    const d = read(data.daily[i], i);
+    if (i < first || !d) return;
+    if (!fin(d.dir_hit) || !fin(d.coverage)) return;
+    out.push({ date, track: d.track, dirHit: d.dir_hit, dirHitOpen: fin(d.dir_hit_open) ? d.dir_hit_open : null, coverage: d.coverage,
+      upShare: fin(d.up_share) ? d.up_share : null, avgRet: fin(d.avg_ret) ? d.avg_ret : null, n: d.n || 0 });
   });
   return out;
 }
@@ -64,6 +70,8 @@ export function summarize(rows) {
     days: new Set(list.map((r) => r.date)).size,
     inside, coverage: inside / list.length,
     right, dirN: withDir.length, hit: withDir.length ? right / withDir.length : null,
+    ...(() => { const o = list.filter((r) => r.rightOpen != null); const k = o.filter((r) => r.rightOpen).length;
+      return { rightOpen: k, openN: o.length, hitOpen: o.length ? k / o.length : null }; })(),
     alwaysUp: ups / list.length,
     avgMissPct: mean(list.map((r) => Math.abs(r.missPct))),
     avgMissRs: mean(list.filter((r) => fin(r.missRs)).map((r) => Math.abs(r.missRs))),
@@ -100,6 +108,7 @@ export function verdict(s, who) {
       even: "the lean was about as good as a plain guess.",
       worse: "the lean did worse than a plain guess over this period.",
     }[dirGrade];
+    if (s.openN) direction += ` Measured from the opening price, which is what a trader could still act on after 9:15 AM, it was right ${s.rightOpen} out of ${s.openN} times (${pct(s.hitOpen)}).`;
   }
   return { range: rangeText, direction, grade: covGrade, dirGrade, who };
 }

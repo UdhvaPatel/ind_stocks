@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 from . import config
+from .config import IST
 
 LEDGER_SCHEMA = 1
 
@@ -57,7 +59,35 @@ def make_record(entry: dict, for_date: date, model_version: str,
         "plans": entry["plans"],
         "call": {"call": d["call"], "kind": d["kind"], "reference_kind": d["reference_kind"],
                  "label": d["label"]},
+        # Where the record was made. Only records made by the scheduled GitHub workflow can be
+        # checked independently (its run log and commit), so only those count as verified live.
+        "source": runner_info(),
     }
+
+
+def runner_info() -> dict:
+    on_actions = os.environ.get("GITHUB_ACTIONS") == "true"
+    return {"runner": "github-actions" if on_actions else "local",
+            "run_id": os.environ.get("GITHUB_RUN_ID") if on_actions else None,
+            "repository": os.environ.get("GITHUB_REPOSITORY") if on_actions else None}
+
+
+OPEN_IST = (9, 15)
+
+
+def made_before_open(record: dict) -> bool:
+    """True when the record's own timestamp is before 09:15 IST on the session it is for."""
+    try:
+        made = datetime.fromisoformat(record["made_at"]).astimezone(IST)
+        day = date.fromisoformat(record["for_date"])
+    except (KeyError, ValueError, TypeError):
+        return False
+    return made < datetime(day.year, day.month, day.day, *OPEN_IST, tzinfo=IST)
+
+
+def verified(record: dict) -> bool:
+    """Counts as live evidence: made by the scheduled workflow, before the open."""
+    return made_before_open(record) and (record.get("source") or {}).get("runner") == "github-actions"
 
 
 def _line(record: dict) -> str:

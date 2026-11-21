@@ -3,10 +3,10 @@
 import { clear, h, prefs, reduced } from "./core.js";
 
 export const STEPS = [
-  { n: "1", title: "Pick a company", text: "Choose any of the 50 big Indian companies from the list on the left, or tap a tile in the coloured grid." },
-  { n: "2", title: "Read the verdict", text: "“No trade” means the tool found no tested reason to act. That is the honest answer on most days." },
+  { n: "1", title: "Pick a company", text: "On the Home page, search or tap any of the 50 big Indian companies." },
+  { n: "2", title: "Read the verdict", text: "“Wait” means the tool found no tested reason to act. That is the honest answer on most days." },
   { n: "3", title: "Try your own numbers", text: "On “Make a plan”, type an amount and a goal. The site tells you whether that goal is realistic." },
-  { n: "4", title: "Practise for free", text: "Press “I'd follow this plan” on Home; “My journal” shows how it would have gone, with pretend money." },
+  { n: "4", title: "Practise for free", text: "Open the folded practice plan on Home and press “Practise with pretend money”; “My journal” shows how it would have gone, with pretend money." },
 ];
 
 export const GLOSSARY = [
@@ -85,7 +85,7 @@ export function openHelp(go) {
         list,
         h("div", { class: "welcome-act" },
           h("button", { class: "btn", type: "button", text: "Read the full method", onclick: () => { closeHelp(); go("how"); } }),
-          h("button", { class: "btn", type: "button", text: "Show the welcome card again", onclick: () => { prefs.set("welcome-seen", false); closeHelp(); go("today"); } })))));
+          h("button", { class: "btn", type: "button", text: "Start again from the Home page", onclick: () => { prefs.set("welcome-seen", false); closeHelp(); go("home"); } })))));
   document.body.append(helpEl);
   document.addEventListener("keydown", onKey);
   close.focus();

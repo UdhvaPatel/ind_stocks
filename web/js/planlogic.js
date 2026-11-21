@@ -5,7 +5,7 @@
 // Nothing here forecasts anything new. It sizes the published levels for the
 // viewer's money and reports what the rules did in the past. No page
 // dependencies, so it runs under Node for tests.
-import { charges } from "./money.js";
+import { charges, tradePrices } from "./money.js";
 
 export const LIMITS = { minAmount: 100, maxAmount: 1e8, maxTarget: 1e9 };
 export const RULE_NAMES = { breakout: "Breakout", pullback: "Dip buy", gap_reversal: "Gap reversal" };
@@ -44,16 +44,11 @@ export function validate(raw) {
 }
 
 // ----------------------------------------------------------------- sizing
-// Per-share figures for one rule on one stock. Slippage is applied on the entry
-// and (more heavily) on a stop exit, as in the pipeline's cost model.
+// Per-share figures for one rule on one stock: the shared fill rules in money.js, which
+// copy the pipeline's (no slippage on the dip buy's limit order, the gap rule's stop follows its fill).
 function perShare(stock, kind, rule, costs) {
-  const slip = fin(stock.slippage) ? stock.slippage : 0;
-  const stopMult = costs.slippage && fin(costs.slippage.stop_exit_multiplier) ? costs.slippage.stop_exit_multiplier : 1;
-  const fill = rule.entry * (1 + slip);
-  const stopFill = rule.stop * (1 - slip * stopMult);
-  // Breakout and dip-buy exit half at each target; the gap rule has one target.
-  const bestExit = kind === "gap_reversal" ? rule.t1 : (rule.t1 + rule.t2) / 2;
-  return { fill, stopFill, bestExit };
+  const p = tradePrices(kind, rule, fin(stock.slippage) ? stock.slippage : 0, costs);
+  return { fill: p.fill, stopFill: p.stopExit, bestExit: p.bestExit };
 }
 function lossFor(n, ps, costs) { return n * (ps.fill - ps.stopFill) + charges(n * ps.fill, n * ps.stopFill, costs).total; }
 function gainFor(n, ps, costs) { return n * (ps.bestExit - ps.fill) - charges(n * ps.fill, n * ps.bestExit, costs).total; }

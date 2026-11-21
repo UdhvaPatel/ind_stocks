@@ -5,7 +5,7 @@ import { openHelp } from "./guide.js";
 import { planStats } from "./insight.js";
 import { makePlan } from "./planlogic.js";
 
-const CALL_TEXT = { NO_TRADE: "NO TRADE", NEUTRAL: "NEUTRAL", FAVOURABLE: "FAVOURABLE" };
+const CALL_TEXT = { NO_TRADE: "WAIT", NEUTRAL: "WEAK SIGNAL", FAVOURABLE: "STRONGER SIGNAL (UNPROVEN)" };   // same words as Home
 const px = (x) => "₹" + fmt.px(x);
 const chance = (p, bound) => (p == null ? "not known" : (bound === "under" ? "under " : "about ") + (p > 0 && p < 0.005 ? "0.5%" : fmt.prob(p, p < 0.1 ? 1 : 0)));
 

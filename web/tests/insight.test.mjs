@@ -143,7 +143,7 @@ test("the welcome card can be dismissed for good, and the help panel explains th
   for (const word of ["Stop", "Target", "No trade", "After costs"]) assert.ok(help.textContent.includes(word), word);
   help.querySelector(".help-search").dispatchEvent({ type: "input", target: { value: "give-up" } });
   assert.equal(help.querySelectorAll(".gloss-row").length, 1, "the glossary can be searched");
-  help.querySelectorAll("button").find((b) => /welcome card again/.test(b.textContent)).click();
+  help.querySelectorAll("button").find((b) => /Start again from the Home page/.test(b.textContent)).click();
   assert.equal(document.body.querySelector(".help"), null);
   assert.ok(welcomeCard(go), "the welcome card can be brought back");
   closeHelp();                                                         // closing twice is harmless

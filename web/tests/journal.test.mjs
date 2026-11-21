@@ -86,7 +86,7 @@ test("the journal page: empty state, then results, remove and two-step clear", a
   assert.match(root.textContent, /Your journal is empty/);
 });
 
-test("Home: 'I'd follow this plan' adds to the journal and can be undone", { skip: !hasData() && "published data files are not present" }, async () => {
+test("Home: 'Practise with pretend money' adds to the journal and can be undone", { skip: !hasData() && "published data files are not present" }, async () => {
   install();
   const { renderHome } = await import("../js/home.js");
   const meta = readData("meta.json"), market = readData("market.json");
@@ -95,7 +95,7 @@ test("Home: 'I'd follow this plan' adds to the journal and can be undone", { ski
   const went = [];
   // pick a stock whose plan fits the default amount
   await renderHome(root, { meta, market, params: new URLSearchParams({ s: "ITC" }), go: (...a) => went.push(a) });
-  const follow = root.querySelectorAll("button").find((b) => /I'd follow this plan/.test(b.textContent));
+  const follow = root.querySelectorAll("button").find((b) => /Practise with pretend money/.test(b.textContent));
   assert.ok(follow, "the button is offered");
   follow.click();
   assert.equal(load().length, 1);

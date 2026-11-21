@@ -44,7 +44,7 @@ test("the next plan uses the tool's own pick and sizes it for the amount", () =>
   assert.equal(p.t2, null, "the low-opening plan has one target");
 
   const called = nextPlan({ ...SYMBOL, call: { call: "NEUTRAL", kind: "breakout" } }, 50000, COSTS);
-  assert.equal(called.kind, "breakout"); assert.equal(called.verdict.badge, "Maybe"); assert.equal(called.t2, 1050);
+  assert.equal(called.kind, "breakout"); assert.equal(called.verdict.badge, "Weak signal"); assert.equal(called.t2, 1050);
   const poor = nextPlan(SYMBOL, 500, COSTS);
   assert.equal(poor.shares, 0); assert.equal(poor.needForOne, 985);
   assert.equal(nextPlan({ plans: {} }, 1000, COSTS), null);
@@ -82,27 +82,33 @@ test("the record counts correct predictions and adds up following the plan", () 
   assert.equal(record([], 1000), null);
 });
 
-test("a 'wait' day is judged against what the plans would have done", () => {
-  const day = (rules, advice = "N", kind = "gap_reversal") => pastRows({ days: ["2026-11-20"], track: ["live"], daily: [],
-    stocks: { X: [[0, 100, -2, 0, 2, 101, 1, 0.5, 1, 1, kind, kind ? "not_triggered" : null, null, 98, 95, rules, advice]] } }, "X")[0];
-  const saved = judgeWait(day([-1.2, -0.4, "n"]), 50000);
-  assert.equal(saved.verdict, "saved"); assert.equal(saved.worst.kind, "breakout"); assert.equal(saved.worst.money, -600);
-  const missed = judgeWait(day([0.8, "n", "n"]), 50000);
-  assert.equal(missed.verdict, "missed"); assert.equal(missed.best.money, 400);
-  assert.equal(judgeWait(day([0.8, -0.5, "n"]), 50000).verdict, "mixed");
-  assert.equal(judgeWait(day(["n", "n", "n"]), 50000).verdict, "nothing");
-  const partial = judgeWait(day([null, null, "n"]), 50000);
-  assert.equal(partial.verdict, "nothing"); assert.equal(partial.partial, true, "says when some plans are not recorded");
-  assert.equal(judgeWait(day([null, null, null], "N", null), 50000).verdict, "unknown");
-  assert.equal(judgeWait(day([null, null, null]), 50000).verdict, "nothing", "the shown plan's own result is always known");
+test("a 'wait' day is judged only against the one plan shown that morning (no hindsight)", () => {
+  // the shown plan is "buy on a rise" (breakout); the other rules must not affect the verdict
+  const day = (rules, advice = "N", kind = "breakout") => pastRows({ days: ["2026-11-20"], track: ["live"], daily: [],
+    stocks: { X: [[0, 100, -2, 0, 2, 101, 1, 0.5, 1, 1, kind, kind ? "time" : null, null, 98, 95, rules, advice]] } }, "X")[0];
+  const saved = judgeWait(day([-1.2, 0.9, "n"]), 50000);               // another rule made money: irrelevant
+  assert.equal(saved.verdict, "saved"); assert.equal(saved.plan.kind, "breakout"); assert.equal(saved.plan.money, -600);
+  const missed = judgeWait(day([0.8, -3, "n"]), 50000);
+  assert.equal(missed.verdict, "missed"); assert.equal(missed.plan.money, 400);
+  assert.equal(judgeWait(day(["n", 2.0, "n"]), 50000).verdict, "nothing", "the shown plan never bought");
+  assert.equal(judgeWait(day([null, 2.0, "n"]), 50000).verdict, "unknown");
   assert.equal(judgeWait(day([0.8, -0.5, "n"], "U"), 50000), null, "only 'wait' days are judged this way");
 
-  const R = record([day([-1.2, -0.4, "n"]), day([0.8, "n", "n"]), day(["n", "n", "n"]), day([0.5, null, "n"], "U")], 50000);
+  const R = record([day([-1.2, 1, "n"]), day([0.8, -1, "n"]), day(["n", 1, "n"]), day([0.5, null, "n"], "U")], 50000);
   assert.deepEqual([R.waits.days, R.waits.saved, R.waits.missed, R.waits.nothing], [3, 1, 1, 1]);
   assert.equal(R.waits.avoided, 600); assert.equal(R.waits.forgone, 400);
+  assert.equal(lastSession([day([-1.2, 1, "n"])], 50000).wait.verdict, "saved");
+});
 
-  const L = lastSession([day([-1.2, -0.4, "n"])], 50000);
-  assert.equal(L.wait.verdict, "saved");
+test("the next plan uses the scoreboard's fill rules", () => {
+  // dip buy: limit order, no entry slippage; breakout: entry slippage; best case = half at each target
+  const d = (kind) => ({ ...SYMBOL, slippage: 0.001, call: { call: "NEUTRAL", kind }, plans: {
+    breakout: { levels: { entry: 1000, stop: 980, t1: 1020, t2: 1040 } }, pullback: { levels: { entry: 1000, stop: 980, t1: 1020, t2: 1040 } } } });
+  const b = nextPlan(d("breakout"), 100000, COSTS), p = nextPlan(d("pullback"), 100000, COSTS);
+  assert.equal(p.shares, 100, "limit fill at 1000");
+  assert.equal(b.shares, 99, "stop-buy fill at 1001");
+  assert.ok(p.best > b.best, "paying slippage lowers the best case");
+  assert.ok(p.best < 100 * 30 && p.best > 100 * 30 - 100, "half at 1020 and half at 1040, less charges");
 });
 
 test("stock badges use the company's initials", () => {
@@ -121,16 +127,24 @@ test("the Home page walks through the three steps with real data", { skip: !hasD
   const went = [];
   await renderHome(root, { meta, market, params: new URLSearchParams({ s: "RELIANCE" }), go: (...a) => went.push(a) });
   const text = root.textContent;
-  for (const phrase of ["Know the plan", "Choose a stock", "Plan for the next market day", "If you had followed it last time",
-                        "How often we were right", "Expected closing price", "Chance it closes higher", "What each plan would have done",
-                        "Educational only, not investment advice"]) assert.ok(text.includes(phrase), phrase);
+  for (const phrase of ["Know the plan", "Choose a stock", "Next market day", "Last time", "How often we were right",
+                        "Likely closing range", "Chance of a higher close", "a coin flip is 50%", "What each of the three plans did",
+                        "up/down calls right from the opening price", "Educational only, not investment advice"]) assert.ok(text.includes(phrase), phrase);
+  for (const banned of ["smart move", "Good setup", "leans down", "Buy only if"]) assert.ok(!text.includes(banned), `no "${banned}"`);
   assert.equal(root.querySelectorAll(".hx-tile").length, market.heatmap.length, "every stock can be chosen");
   assert.equal(root.querySelectorAll(".hx-tile.on").length, 1);
   assert.equal(root.querySelectorAll(".hx-card").length, 3);
   const compare = readData("compare.json"), lastRow = compare.stocks.RELIANCE.at(-1);
-  if (lastRow[16] === "N") assert.match(text, /Our advice was Wait/, "a 'wait' day is judged as advice, not shown as ₹0 from a plan");
-  assert.match(text, /When we said “wait”/);
-  assert.ok(root.querySelectorAll(".hx-dot").length >= 10, "a dot for each recent day");
+  const symbolFile = readData("symbols/RELIANCE.json");
+  if (symbolFile.call.call === "NO_TRADE") {
+    assert.ok(root.querySelector(".hx-fold"), "on a 'Wait' day the practice plan is folded away");
+    assert.match(root.querySelector(".hx-fold").textContent, /See the practice plan \(for learning only\)/);
+    assert.match(root.querySelector(".hx-fold").textContent, /The plan would buy only if/);
+  }
+  if (lastRow[compare.cols.indexOf("advice")] === "N") assert.match(text, /Our advice was Wait/, "a 'wait' day is judged as advice, not shown as ₹0 from a plan");
+  assert.ok(root.querySelectorAll(".hx-dot").length >= 10, "a mark for each recent day");
+  assert.ok(root.querySelectorAll(".hx-dot").every((x) => x.textContent === "✓" || x.textContent === "✗"), "not colour alone");
+  assert.match(text, /Not proven|Test replay|Real prediction/);
   assert.ok(!/undefined|NaN|null/.test(text));
 
   // picking another stock redraws the three cards for it
@@ -149,4 +163,25 @@ test("the Home page walks through the three steps with real data", { skip: !hasD
   // search narrows the list
   root.querySelector(".hx-search").querySelector("input").dispatchEvent({ type: "input", target: { value: "infos" } });
   assert.deepEqual(root.querySelectorAll(".hx-tile").map((t) => t.dataset.sym), ["INFY"]);
+});
+
+test("Home does not choose a stock for a first-time visitor", { skip: !hasData() && "published data files are not present" }, async () => {
+  install();                                                           // fresh storage: no remembered stock
+  const { renderHome } = await import("../js/home.js?fresh");
+  const root = document.createElement("div");
+  await renderHome(root, { meta: readData("meta.json"), market: readData("market.json"), params: new URLSearchParams(), go() {} });
+  assert.equal(root.querySelectorAll(".hx-tile.on").length, 0);
+  assert.equal(root.querySelectorAll(".hx-card").length, 0);
+  assert.match(root.textContent, /Pick any company above/);
+  root.querySelectorAll(".hx-chip").find((b) => b.textContent === "INFY").click();     // a popular chip picks it
+  await new Promise((r) => setTimeout(r, 30));
+  assert.match(root.querySelector(".hx-stock").textContent, /NSE: INFY/);
+});
+
+test("Hindi strings are available and fall back to English", async () => {
+  const { t, hasHindi } = await import("../js/i18n.js");
+  assert.equal(t("Plans for {date}", { date: "23-Nov-2026" }), "Plans for 23-Nov-2026", "English by default");
+  for (const key of ["Wait", "Likely closing range", "Educational only, not investment advice. Predictions can be wrong, and past results do not guarantee future ones. Every money figure is an estimate after typical trading charges."])
+    assert.ok(hasHindi(key), key);
+  assert.equal(t("a string with no translation"), "a string with no translation");
 });
