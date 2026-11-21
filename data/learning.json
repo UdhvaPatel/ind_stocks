@@ -1,98 +1,98 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-16T22:01:37+05:30",
- "as_of": "2026-11-16",
+ "generated_at": "2026-11-21T09:16:41+05:30",
+ "as_of": "2026-11-20",
  "trained": {
-  "week": "2026-11-16",
-  "rows": 109501,
-  "from": "2017-09-05",
-  "to": "2026-11-13",
-  "up_share": 0.5073
+  "week": "2026-11-23",
+  "rows": 109619,
+  "from": "2017-09-08",
+  "to": "2026-11-20",
+  "up_share": 0.5074
  },
- "next_training": "2026-11-23",
+ "next_training": "2026-11-30",
  "blend_weights": {
   "simple": 0.0,
-  "logistic": 0.4806,
-  "trees": 0.4792
+  "logistic": 0.3594,
+  "trees": 0.5902
  },
  "window_sessions": 250,
  "sources": {
   "simple": {
    "n": 12500,
-   "hit": 0.5546,
-   "brier": 0.24781,
-   "skill_vs_coin": 0.0088
+   "hit": 0.553,
+   "brier": 0.248,
+   "skill_vs_coin": 0.008
   },
   "logistic": {
    "n": 12500,
-   "hit": 0.5539,
-   "brier": 0.24675,
-   "skill_vs_coin": 0.013
+   "hit": 0.5529,
+   "brier": 0.24681,
+   "skill_vs_coin": 0.0128
   },
   "trees": {
    "n": 12500,
-   "hit": 0.5318,
-   "brier": 0.24682,
-   "skill_vs_coin": 0.0127
+   "hit": 0.5374,
+   "brier": 0.24647,
+   "skill_vs_coin": 0.0141
   },
   "blend": {
    "n": 12500,
    "hit": 0.5458,
-   "brier": 0.24631,
-   "skill_vs_coin": 0.0148
+   "brier": 0.24615,
+   "skill_vs_coin": 0.0154
   }
  },
  "top_weights": [
   {
    "feature": "x",
    "label": "Overnight US move",
-   "weight": 0.1258
+   "weight": 0.1248
   },
   {
    "feature": "roc21_u",
    "label": "1-month move",
-   "weight": 0.1002
-  },
-  {
-   "feature": "x_beta",
-   "label": "Overnight US move x stock beta",
-   "weight": 0.0948
+   "weight": 0.1067
   },
   {
    "feature": "rsi",
    "label": "RSI",
-   "weight": -0.094
+   "weight": -0.103
+  },
+  {
+   "feature": "x_beta",
+   "label": "Overnight US move x stock beta",
+   "weight": 0.0947
   },
   {
    "feature": "d20_u",
    "label": "Distance from 20-day average",
-   "weight": -0.0683
+   "weight": -0.0555
   },
   {
    "feature": "ret_u",
    "label": "Previous day's move",
-   "weight": -0.0458
+   "weight": -0.0447
   },
   {
    "feature": "clv",
    "label": "Where the previous day closed inside its range",
-   "weight": -0.0316
+   "weight": -0.0322
   },
   {
    "feature": "d50_u",
    "label": "Distance from 50-day average",
-   "weight": -0.0295
+   "weight": -0.0282
   },
   {
    "feature": "roc5_u",
    "label": "5-day move",
-   "weight": 0.0282
+   "weight": 0.0258
   },
   {
-   "feature": "adv",
-   "label": "Market breadth (advancers)",
-   "weight": 0.0267
+   "feature": "vixrank",
+   "label": "India VIX level (percentile)",
+   "weight": 0.025
   }
  ],
  "history": [
@@ -117,6 +117,29 @@
     "logistic": 0.013,
     "trees": 0.0127,
     "blend": 0.0148
+   }
+  },
+  {
+   "week": "2026-11-23",
+   "rows": 109619,
+   "trained_to": "2026-11-20",
+   "weights": {
+    "simple": 0.0,
+    "logistic": 0.3594,
+    "trees": 0.5902
+   },
+   "window_sessions": 250,
+   "hit": {
+    "simple": 0.553,
+    "logistic": 0.5529,
+    "trees": 0.5374,
+    "blend": 0.5458
+   },
+   "skill": {
+    "simple": 0.008,
+    "logistic": 0.0128,
+    "trees": 0.0141,
+    "blend": 0.0154
    }
   }
  ],

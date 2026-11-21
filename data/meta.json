@@ -1,24 +1,24 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-16T22:01:37+05:30",
- "last_eod_date": "2026-11-16",
- "plan_for_date": "2026-11-17",
+ "generated_at": "2026-11-21T09:16:41+05:30",
+ "last_eod_date": "2026-11-20",
+ "plan_for_date": "2026-11-23",
  "plan_status": "draft",
  "result_date": "2026-11-16",
- "today_ist": "2026-11-16",
- "today_is_session": true,
+ "today_ist": "2026-11-21",
+ "today_is_session": false,
  "upcoming_sessions": [
-  "2026-11-17",
-  "2026-11-18",
-  "2026-11-19"
+  "2026-11-23",
+  "2026-11-25",
+  "2026-11-26"
  ],
  "pipeline_status": "ok",
  "message": null,
  "sources": {
   "nse": {
    "counts": {
-    "saved": 1,
+    "saved": 4,
     "exists": 0,
     "closed": 0,
     "pending": 0,
@@ -29,12 +29,6 @@
   "yahoo": {
    "ok": 60,
    "failed": []
-  },
-  "bars5m": {
-   "saved": [
-    "2026-11-16"
-   ],
-   "failed_symbols": []
   }
  },
  "session": {
