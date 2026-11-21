@@ -196,7 +196,7 @@ Two repositories:
 
 | Repo | Visibility | Holds |
 |---|---|---|
-| `ind-stocks-site` | **Public** (GitHub Pages on the free plan requires it) | Code, config, workflows, `web/`, the published `data/` (derived analytics, plans, scores) and the prediction ledger |
+| `ind_stocks` (planned as `ind-stocks-site`) | **Public** (GitHub Pages on the free plan requires it) | Code, config, workflows, `web/`, the published `data/` (derived analytics, plans, scores) and the prediction ledger |
 | `ind-stocks-vault` | **Private** | Raw archives that must not be redistributed: 5-minute bars and any raw price snapshots. Reached by the pipeline through a fine-grained token stored as an Actions secret (access to the vault only) |
 
 How it runs:
