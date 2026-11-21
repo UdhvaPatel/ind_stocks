@@ -22,13 +22,18 @@ on:
     - cron: "30 16 * * 1-6"
     # weekly: Sunday 10:00 IST (retrains the models, rebuilds the backtest)
     - cron: "30 4 * * 0"
+  # A push that changes the site (made by a person; the jobs' own pushes do not trigger
+  # workflows) only redeploys what is committed. It needs no vault and fetches nothing.
+  push:
+    branches: [main]
+    paths: ["web/**", "data/**", ".github/workflows/pipeline.yml"]
   workflow_dispatch:
     inputs:
       job:
-        description: "Which job to run"
+        description: "Which job to run (deploy = publish the committed site only)"
         type: choice
         default: eod
-        options: [premarket, eod, weekly]
+        options: [premarket, eod, weekly, deploy]
       force:
         description: "premarket only: issue the plan even after 08:45 IST"
         type: boolean
@@ -60,6 +65,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             JOB="${{ inputs.job }}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            JOB=deploy
           else
             case "${{ github.event.schedule }}" in
               "30 4 * * 0") JOB=weekly ;;
@@ -73,7 +80,18 @@ jobs:
       - name: Check out the site repository
         uses: actions/checkout@v4
 
+      - name: Check that the vault can be reached
+        if: steps.pick.outputs.job != 'deploy'
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          if [ -z "$VAULT_TOKEN" ]; then
+            echo "::error::The VAULT_TOKEN secret is not set, so the private ind-stocks-vault repository cannot be read. Follow steps.md section A (A2 to A4). The website itself can still be published with Run workflow -> job: deploy."
+            exit 1
+          fi
+
       - name: Check out the private vault (raw data)
+        if: steps.pick.outputs.job != 'deploy'
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/ind-stocks-vault
@@ -81,14 +99,17 @@ jobs:
           path: vault
 
       - uses: actions/setup-python@v5
+        if: steps.pick.outputs.job != 'deploy'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install dependencies
+        if: steps.pick.outputs.job != 'deploy'
         run: pip install -r requirements.txt
 
       - name: Run the job
+        if: steps.pick.outputs.job != 'deploy'
         run: |
           case "${{ steps.pick.outputs.job }}" in
             premarket) python -m pipeline.run_premarket ${{ inputs.force && '--force' || '' }} ;;
@@ -97,6 +118,7 @@ jobs:
           esac
 
       - name: Save raw data to the vault
+        if: steps.pick.outputs.job != 'deploy'
         working-directory: vault
         run: |
           git config user.name "github-actions[bot]"
@@ -109,6 +131,7 @@ jobs:
 
       - name: Commit the published data and the ledger
         id: commit
+        if: steps.pick.outputs.job != 'deploy'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -125,7 +148,7 @@ jobs:
       # A push made with the default token does not start another workflow, so
       # the site is deployed here, in the same run.
       - name: Assemble the site
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
         run: |
           mkdir -p _site
           cp -r web/. _site/
@@ -135,14 +158,14 @@ jobs:
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
 
       - uses: actions/upload-pages-artifact@v3
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
         with:
           path: _site
 
       - name: Deploy to GitHub Pages
         id: deploy
-        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || steps.pick.outputs.job == 'deploy'
         uses: actions/deploy-pages@v4
