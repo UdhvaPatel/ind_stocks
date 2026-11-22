@@ -105,6 +105,20 @@ def test_no_plan_when_the_data_is_stale(engine, tmp_data, monkeypatch):
     assert jobs.issue_plan(engine) == ("not_issued", for_date) and not ledger.load()
 
 
+def test_the_whole_publish_step_runs_and_writes_every_file(engine, tmp_data, monkeypatch):
+    """End to end, as every job calls it (a renamed variable once crashed the weekly job here)."""
+    tmp_data.mkdir(parents=True, exist_ok=True)
+    (tmp_data / "universe.json").write_text(json.dumps({"stocks": [{"symbol": s, "name": s} for s in ("AAA", "BBB", "CCC")]}), encoding="utf-8")
+    for_date = _at(monkeypatch, engine, -1, time(18, 30))
+    jobs.publish_site(engine, "draft", for_date, {"sources": {}})
+    jobs.write_health("eod", {"sources": {"nse": "ok"}})
+    for name in ("meta.json", "market.json", "planner.json", "compare.json", "track.json", "portfolio.json", "health.json",
+                 "days/index.json", "compare/index.json"):
+        assert (tmp_data / name).exists(), name
+    meta = json.loads((tmp_data / "meta.json").read_text(encoding="utf-8"))
+    assert meta["plan_for_date"] == for_date.isoformat() and "result_date" in meta
+
+
 def test_force_overrides_the_cutoff(engine, tmp_data, monkeypatch):
     _at(monkeypatch, engine, 0, time(9, 5))
     assert jobs.issue_plan(engine, force=True)[0] == "scored" and len(ledger.load()) == 3

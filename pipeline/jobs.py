@@ -213,7 +213,7 @@ def publish_site(engine: Engine, plan_status: str, for_date: date, status: dict)
         "last_eod_date": as_of.isoformat(),
         "plan_for_date": for_date.isoformat(),
         "plan_status": plan_status,
-        "result_date": live_days[-1] if live_days else None,
+        "result_date": max(by_day) if by_day else None,          # the latest session with scored predictions
         "today_ist": now.date().isoformat(),
         "today_is_session": cal.is_trading_day(now.date()),
         "upcoming_sessions": upcoming,
