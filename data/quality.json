@@ -1,16 +1,16 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-21T10:19:12+05:30",
+ "generated_at": "2026-11-23T05:08:14+05:30",
  "sessions_archived": 1245,
  "first_session": "2021-11-15",
  "last_session": "2026-11-20",
  "cross_check": {
   "symbols": 50,
-  "sessions_compared": 59409,
+  "sessions_compared": 59417,
   "agree_within_0_1_pct": 99.31,
   "disagreements_over_0_5_pct": 53,
-  "missing_in_yahoo": 300,
+  "missing_in_yahoo": 292,
   "missing_in_nse": 0
  },
  "largest_disagreements": [

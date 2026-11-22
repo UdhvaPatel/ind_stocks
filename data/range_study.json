@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-21T11:52:40+05:30",
+ "generated_at": "2026-11-23T05:08:24+05:30",
  "preregistered": "2026-11-21",
  "rule": "adopt only with walk-forward coverage 89-91%, live coverage 87-93% on at least 40 verified sessions, and a better interval score whose day-clustered 95% interval excludes zero",
  "rows": 3050,

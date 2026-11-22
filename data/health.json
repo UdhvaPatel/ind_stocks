@@ -1,0 +1,21 @@
+{
+ "schema": 1,
+ "generated_at": "2026-11-23T05:08:31+05:30",
+ "jobs": {
+  "weekly": {
+   "last_finished": "2026-11-23T05:08:31+05:30"
+  }
+ },
+ "sources": {
+  "nse": "ok",
+  "yahoo": "ok"
+ },
+ "last_eod_date": "2026-11-20",
+ "plan_for_date": "2026-11-23",
+ "plan_status": "draft",
+ "pipeline_status": "ok",
+ "vault_token": {
+  "expires": null
+ },
+ "runner": "github-actions"
+}
