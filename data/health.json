@@ -1,9 +1,12 @@
 {
  "schema": 1,
- "generated_at": "2026-11-23T05:08:31+05:30",
+ "generated_at": "2026-11-23T13:31:01+05:30",
  "jobs": {
   "weekly": {
    "last_finished": "2026-11-23T05:08:31+05:30"
+  },
+  "premarket": {
+   "last_finished": "2026-11-23T13:31:01+05:30"
   }
  },
  "sources": {
@@ -12,8 +15,8 @@
  },
  "last_eod_date": "2026-11-20",
  "plan_for_date": "2026-11-23",
- "plan_status": "draft",
- "pipeline_status": "ok",
+ "plan_status": "not_issued",
+ "pipeline_status": "stale",
  "vault_token": {
   "expires": null
  },
