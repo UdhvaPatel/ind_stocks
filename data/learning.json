@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-23T16:30:56+05:30",
+ "generated_at": "2026-11-24T05:47:09+05:30",
  "as_of": "2026-11-23",
  "trained": {
   "week": "2026-11-23",
@@ -20,7 +20,7 @@
  "sources": {
   "simple": {
    "n": 12500,
-   "hit": 0.5542,
+   "hit": 0.5545,
    "brier": 0.24773,
    "skill_vs_coin": 0.0091
   },
@@ -130,7 +130,7 @@
    },
    "window_sessions": 250,
    "hit": {
-    "simple": 0.5542,
+    "simple": 0.5545,
     "logistic": 0.5542,
     "trees": 0.537,
     "blend": 0.5494
