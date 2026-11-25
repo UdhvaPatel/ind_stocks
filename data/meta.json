@@ -1,12 +1,12 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-25T17:03:25+05:30",
+ "generated_at": "2026-11-26T02:24:02+05:30",
  "last_eod_date": "2026-11-25",
  "plan_for_date": "2026-11-26",
- "plan_status": "draft",
+ "plan_status": "scored",
  "result_date": "2026-11-16",
- "today_ist": "2026-11-25",
+ "today_ist": "2026-11-26",
  "today_is_session": true,
  "upcoming_sessions": [
   "2026-11-26",
@@ -18,7 +18,7 @@
  "sources": {
   "nse": {
    "counts": {
-    "saved": 1,
+    "saved": 0,
     "exists": 0,
     "closed": 0,
     "pending": 1,
