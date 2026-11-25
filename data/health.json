@@ -1,12 +1,12 @@
 {
  "schema": 1,
- "generated_at": "2026-11-25T15:45:40+05:30",
+ "generated_at": "2026-11-25T16:16:53+05:30",
  "jobs": {
   "weekly": {
    "last_finished": "2026-11-23T05:08:31+05:30"
   },
   "premarket": {
-   "last_finished": "2026-11-25T15:45:40+05:30"
+   "last_finished": "2026-11-25T16:16:53+05:30"
   },
   "eod": {
    "last_finished": "2026-11-24T05:47:09+05:30"
@@ -16,10 +16,10 @@
   "nse": "ok",
   "yahoo": "ok"
  },
- "last_eod_date": "2026-11-23",
- "plan_for_date": "2026-11-25",
- "plan_status": "not_issued",
- "pipeline_status": "stale",
+ "last_eod_date": "2026-11-25",
+ "plan_for_date": "2026-11-26",
+ "plan_status": "draft",
+ "pipeline_status": "ok",
  "vault_token": {
   "expires": null
  },
