@@ -86,7 +86,64 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. Set up and running on GitHu
   healthchecks.io yourself (period 1 day, grace 12 hours), copy its ping URL, and add it as a repository secret named
   `HEALTHCHECK_URL` (same place as `VAULT_TOKEN`). If the pings stop, healthchecks.io emails you. Skip this if you prefer.
 
-**Important: plans made on your computer no longer count as live.** Only plans written by GitHub's 06:00 IST job
+- [ ] **A11. Start the jobs on time with an outside timer (about 15 minutes, once).** Since 23 Nov 2026
+  GitHub has started its own scheduled runs 7 to 11 hours late, so the 06:00 plan was made after the market
+  closed and no plan counted. A free timer at cron-job.org starts the workflow at exact times instead.
+  Plans made this way still count as live, because they are still written by GitHub Actions before 09:15.
+  GitHub's own schedule stays on as a backup.
+
+  **Step 1: a token that can only start this workflow.**
+  1. Open https://github.com/settings/personal-access-tokens/new
+  2. Token name: `cron-job.org start pipeline`. Expiration: 1 year (put a reminder in your calendar).
+  3. Repository access: **Only select repositories** → `ind_stocks` (not the vault).
+  4. Permissions → Repository permissions → **Actions: Read and write**. Leave everything else as it is.
+  5. **Generate token** and copy it. Do not paste it into a chat; it goes only into cron-job.org below.
+
+  **Step 2: the first timer job.**
+  1. Make a free account at https://cron-job.org and sign in.
+  2. Settings (top right) → Time zone: **Asia/Kolkata**. Save. (Every time below is India time.)
+  3. **Cronjobs → Create cronjob**.
+  4. Common tab:
+     - Title: `premarket 06:05`
+     - URL: `https://api.github.com/repos/UdhvaPatel/ind_stocks/actions/workflows/pipeline.yml/dispatches`
+     - Execution schedule: **Custom** → Days of week: Monday to Friday · Hours: 6 · Minutes: 5
+       (days of month and months: every)
+     - Notifications: tick **execution of the cronjob fails**
+  5. Advanced tab:
+     - Headers → add three:
+       `Authorization` = `Bearer ` followed by your token (one space after Bearer)
+       `Accept` = `application/vnd.github+json`
+       `X-GitHub-Api-Version` = `2022-11-28`
+     - Request method: **POST**
+     - Request body: `{"ref":"main","inputs":{"job":"premarket"}}`
+  6. **Create**.
+
+  **Step 3: five more jobs.** On the job you just made, use **Clone** (the copy icon) and change only the
+  title, the time, and the body:
+
+  | Title | Days | Time (IST) | Request body |
+  |---|---|---|---|
+  | premarket 06:05 (made above) | Mon to Fri | 06:05 | `{"ref":"main","inputs":{"job":"premarket"}}` |
+  | premarket 07:05 | Mon to Fri | 07:05 | `{"ref":"main","inputs":{"job":"premarket"}}` |
+  | premarket 08:05 last | Mon to Fri | 08:05 | `{"ref":"main","inputs":{"job":"premarket","final":"true"}}` |
+  | eod 18:35 | Mon to Fri | 18:35 | `{"ref":"main","inputs":{"job":"eod"}}` |
+  | eod 20:05 | Mon to Fri | 20:05 | `{"ref":"main","inputs":{"job":"eod"}}` |
+  | eod 22:05 last | Mon to Fri | 22:05 | `{"ref":"main","inputs":{"job":"eod","final":"true"}}` |
+
+  The "last" runs fail on purpose if the day's work is still missing, so GitHub emails you (A9).
+  Never add `"force"` to a body.
+
+  **Step 4: check it works.** On **eod 18:35** click **Test run** (an extra eod run is always safe; a test of
+  a premarket job is not, at the wrong time of day). It should say **204 No Content**. Then open
+  https://github.com/UdhvaPatel/ind_stocks/actions: a new **pipeline** run appears within a minute.
+  - 401 or 403: the token or the `Authorization` header is wrong (check the space after `Bearer`).
+  - 404: the URL has a typo, or the token was not given access to `ind_stocks`.
+  - 422: the body has a typo (the quotes must be straight `"`).
+
+  The next morning, check that the Actions tab shows a run that started at about 06:05 IST
+  (11:35 PM the evening before, Central time).
+
+**Important: plans made on your computer no longer count as live.** Only plans written by the GitHub workflow (started by the 06:05 timer in A11 or GitHub's backup schedule)
 (before the 09:15 open) are counted in the live record, because only those can be checked by anyone. Plans made with
 `run_premarket` on your computer are labelled "not proven". So once GitHub runs the jobs, don't run them locally.
 
@@ -94,7 +151,7 @@ Your code repository is **`UdhvaPatel/ind_stocks`**. Set up and running on GitHu
 
 - A red cross in the **Actions** tab: click the run, then the red step, and send me the last 30 lines.
 - "Resource not accessible" or the vault step fails: the token in A5/A6 is wrong or expired. Redo A5 and A6.
-- The site shows "This data is out of date": a scheduled run was skipped. Open **Actions → pipeline → Run workflow** and run `eod`.
+- The site shows "This data is out of date": a run was skipped or late. Check cron-job.org's job history (A11) first. Open **Actions → pipeline → Run workflow** and run `eod`.
 - A market holiday or special session is missing: see B1 below. For a special weekend session
   (for example Muhurat trading), run `premarket` by hand before the session and `eod` after it.
 

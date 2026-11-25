@@ -8,14 +8,15 @@ against official NSE data after the close. Educational decision support, **not i
 
 ## How it runs
 
-Everything runs on a schedule in GitHub Actions (`.github/workflows/pipeline.yml`) and is served by
-GitHub Pages. There are no live prices and no always-on server.
+Everything runs in GitHub Actions (`.github/workflows/pipeline.yml`) and is served by GitHub Pages.
+An outside timer (cron-job.org, see `steps.md` A11) starts the jobs at exact times; GitHub's own
+schedule, which has run hours late, is the backup. There are no live prices and no always-on server.
 
 | Job | When (IST) | What it does |
 |---|---|---|
-| `premarket` | 06:00 to 08:00, Mon to Fri | Commits today's plan to the ledger (`data/ledger/`) before the open |
-| `eod` | 18:00 to 22:00, Mon to Sat | Archives the official session, scores the day, publishes a draft for the next session |
-| `weekly` | Sunday 10:00 | Retrains the direction models, rebuilds the 3-year walk-forward and the data-quality report |
+| `premarket` | 06:05, 07:05, 08:05 Mon to Fri (backup 06:17 to 07:47) | Commits today's plan to the ledger (`data/ledger/`) before the open |
+| `eod` | 18:35, 20:05, 22:05 Mon to Fri (backup 18:17 to 22:17, Mon to Sat) | Archives the official session, scores the day, publishes a draft for the next session |
+| `weekly` | Sunday 10:17 | Retrains the direction models, rebuilds the 3-year walk-forward and the data-quality report |
 
 All times shown on the site are India Standard Time, whatever the viewer's time zone.
 

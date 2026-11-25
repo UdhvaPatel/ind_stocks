@@ -7,21 +7,25 @@
 name: pipeline
 
 on:
+  # The main clock is an outside timer (cron-job.org, steps.md A11) that starts this workflow
+  # through workflow_dispatch at exact times. GitHub's own schedule below is only a backup:
+  # since 23 Nov 2026 it has started runs 7 to 11 hours late. Odd minutes avoid the busy
+  # :00 and :30 slots, when GitHub delays scheduled runs most.
   schedule:
-    # premarket: 06:00, 06:30, 07:00, 07:30, 08:00 IST, Monday to Friday
-    - cron: "30 0 * * 1-5"
-    - cron: "0 1 * * 1-5"
-    - cron: "30 1 * * 1-5"
-    - cron: "0 2 * * 1-5"
-    - cron: "30 2 * * 1-5"
-    # eod: 18:00, 18:30, 19:00, 20:00, 22:00 IST, Monday to Saturday
-    - cron: "30 12 * * 1-6"
-    - cron: "0 13 * * 1-6"
-    - cron: "30 13 * * 1-6"
-    - cron: "30 14 * * 1-6"
-    - cron: "30 16 * * 1-6"
-    # weekly: Sunday 10:00 IST (retrains the models, rebuilds the backtest)
-    - cron: "30 4 * * 0"
+    # premarket backup: 06:17, 06:47, 07:17, 07:47 IST, Monday to Friday
+    # (not earlier: the plan assumes overnight data is complete by 06:00 IST)
+    - cron: "47 0 * * 1-5"
+    - cron: "17 1 * * 1-5"
+    - cron: "47 1 * * 1-5"
+    - cron: "17 2 * * 1-5"
+    # eod backup: 18:17, 18:47, 19:17, 20:17, 22:17 IST, Monday to Saturday
+    - cron: "47 12 * * 1-6"
+    - cron: "17 13 * * 1-6"
+    - cron: "47 13 * * 1-6"
+    - cron: "47 14 * * 1-6"
+    - cron: "47 16 * * 1-6"
+    # weekly: Sunday 10:17 IST (retrains the models, rebuilds the backtest)
+    - cron: "47 4 * * 0"
   # A push that changes the site (made by a person; the jobs' own pushes do not trigger
   # workflows) only redeploys what is committed. It needs no vault and fetches nothing.
   push:
@@ -36,6 +40,10 @@ on:
         options: [premarket, eod, weekly, deploy]
       force:
         description: "premarket only: issue the plan even after 08:45 IST"
+        type: boolean
+        default: false
+      final:
+        description: "last run of the morning or evening: fail (and email) if the day's work is missing"
         type: boolean
         default: false
 
@@ -69,14 +77,19 @@ jobs:
           FINAL=false
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             JOB="${{ inputs.job }}"
+            if [ "${{ inputs.final }}" = "true" ]; then FINAL=true; fi
           elif [ "${{ github.event_name }}" = "push" ]; then
             JOB=deploy
           else
+            NOW=$((10#$(TZ=Asia/Kolkata date +%H%M)))       # e.g. 745 for 07:45 IST
             case "${{ github.event.schedule }}" in
-              "30 4 * * 0") JOB=weekly ;;
-              "30 2 * * 1-5") JOB=premarket; FINAL=true ;;               # 08:00 IST, last morning rung
-              "30 0 * * 1-5"|"0 1 * * 1-5"|"30 1 * * 1-5"|"0 2 * * 1-5") JOB=premarket ;;
-              "30 16 * * 1-6") JOB=eod; FINAL=true ;;                     # 22:00 IST, last evening rung
+              "47 4 * * 0") JOB=weekly ;;
+              "17 2 * * 1-5") JOB=premarket                                # 07:47 IST, last morning rung
+                # GitHub often starts this hours late; only treat it as the last rung if it is on time.
+                if [ "$NOW" -lt 915 ]; then FINAL=true; fi ;;
+              "47 0 * * 1-5"|"17 1 * * 1-5"|"47 1 * * 1-5") JOB=premarket ;;
+              "47 16 * * 1-6") JOB=eod                                     # 22:17 IST, last evening rung
+                if [ "$NOW" -ge 2100 ]; then FINAL=true; fi ;;
               *) JOB=eod ;;
             esac
           fi
