@@ -66,7 +66,7 @@ jobs:
     timeout-minutes: 45
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     env:
       IND_VAULT: ${{ github.workspace }}/vault
       TZ: Asia/Kolkata
@@ -223,9 +223,22 @@ jobs:
         with:
           path: _site
 
+      # GitHub's artifact lookup sometimes lags just after the upload ("No artifacts named
+      # github-pages were found", seen three times on 25-26 Nov 2026 with the artifact present),
+      # so a failed first try waits and tries again before the run is marked as failed.
       - name: Deploy to GitHub Pages
         id: deploy
         if: steps.site.outputs.go == 'true'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before trying the deploy again
+        if: steps.site.outputs.go == 'true' && steps.deploy.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages (second try)
+        id: deploy_retry
+        if: steps.site.outputs.go == 'true' && steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
       # Dead-man's switch: on the last rung of a ladder, fail (GitHub emails the owner) if the
