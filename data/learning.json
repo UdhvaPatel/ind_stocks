@@ -1,78 +1,78 @@
 {
  "schema": 1,
  "model_version": "1.0.0",
- "generated_at": "2026-11-26T08:08:16+05:30",
+ "generated_at": "2026-11-26T14:26:57+05:30",
  "as_of": "2026-11-25",
  "trained": {
   "week": "2026-11-23",
-  "rows": 109443,
-  "from": "2017-09-14",
+  "rows": 109399,
+  "from": "2017-09-15",
   "to": "2026-11-20",
   "up_share": 0.5073
  },
  "next_training": "2026-11-30",
  "blend_weights": {
   "simple": 0.0,
-  "logistic": 0.473,
-  "trees": 0.5439
+  "logistic": 0.4567,
+  "trees": 0.5605
  },
  "window_sessions": 250,
  "sources": {
   "simple": {
    "n": 12500,
-   "hit": 0.5553,
+   "hit": 0.555,
    "brier": 0.24746,
-   "skill_vs_coin": 0.0101
+   "skill_vs_coin": 0.0102
   },
   "logistic": {
    "n": 12500,
-   "hit": 0.555,
+   "hit": 0.5546,
    "brier": 0.24626,
    "skill_vs_coin": 0.015
   },
   "trees": {
    "n": 12500,
-   "hit": 0.5409,
-   "brier": 0.2461,
-   "skill_vs_coin": 0.0156
+   "hit": 0.541,
+   "brier": 0.24604,
+   "skill_vs_coin": 0.0158
   },
   "blend": {
    "n": 12500,
-   "hit": 0.5502,
-   "brier": 0.24571,
-   "skill_vs_coin": 0.0172
+   "hit": 0.5501,
+   "brier": 0.24567,
+   "skill_vs_coin": 0.0173
   }
  },
  "top_weights": [
   {
    "feature": "x",
    "label": "Overnight US move",
-   "weight": 0.1254
+   "weight": 0.1255
   },
   {
    "feature": "roc21_u",
    "label": "1-month move",
-   "weight": 0.1065
+   "weight": 0.1063
   },
   {
    "feature": "rsi",
    "label": "RSI",
-   "weight": -0.1021
+   "weight": -0.1032
   },
   {
    "feature": "x_beta",
    "label": "Overnight US move x stock beta",
-   "weight": 0.0937
+   "weight": 0.0936
   },
   {
    "feature": "d20_u",
    "label": "Distance from 20-day average",
-   "weight": -0.0558
+   "weight": -0.0552
   },
   {
    "feature": "ret_u",
    "label": "Previous day's move",
-   "weight": -0.045
+   "weight": -0.0451
   },
   {
    "feature": "clv",
@@ -82,17 +82,17 @@
   {
    "feature": "d50_u",
    "label": "Distance from 50-day average",
-   "weight": -0.0277
+   "weight": -0.0266
   },
   {
    "feature": "roc5_u",
    "label": "5-day move",
-   "weight": 0.0259
+   "weight": 0.0261
   },
   {
    "feature": "vixrank",
    "label": "India VIX level (percentile)",
-   "weight": 0.0248
+   "weight": 0.0247
   }
  ],
  "history": [
@@ -121,25 +121,25 @@
   },
   {
    "week": "2026-11-23",
-   "rows": 109443,
+   "rows": 109399,
    "trained_to": "2026-11-20",
    "weights": {
     "simple": 0.0,
-    "logistic": 0.473,
-    "trees": 0.5439
+    "logistic": 0.4567,
+    "trees": 0.5605
    },
    "window_sessions": 250,
    "hit": {
-    "simple": 0.5553,
-    "logistic": 0.555,
-    "trees": 0.5409,
-    "blend": 0.5502
+    "simple": 0.555,
+    "logistic": 0.5546,
+    "trees": 0.541,
+    "blend": 0.5501
    },
    "skill": {
-    "simple": 0.0101,
+    "simple": 0.0102,
     "logistic": 0.015,
-    "trees": 0.0156,
-    "blend": 0.0172
+    "trees": 0.0158,
+    "blend": 0.0173
    }
   }
  ],
