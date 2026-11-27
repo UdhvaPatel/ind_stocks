@@ -1,12 +1,12 @@
 {
  "schema": 1,
- "generated_at": "2026-11-27T07:08:01+05:30",
+ "generated_at": "2026-11-27T08:07:56+05:30",
  "jobs": {
   "weekly": {
    "last_finished": "2026-11-23T05:08:31+05:30"
   },
   "premarket": {
-   "last_finished": "2026-11-27T07:08:01+05:30"
+   "last_finished": "2026-11-27T08:07:56+05:30"
   },
   "eod": {
    "last_finished": "2026-11-27T06:23:42+05:30"
